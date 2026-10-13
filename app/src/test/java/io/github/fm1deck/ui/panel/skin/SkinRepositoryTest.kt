@@ -24,7 +24,7 @@ class SkinRepositoryTest {
         val skinsDir = findSkinsDir()
         val skins = SkinRepository.loadFromDirectory(skinsDir)
 
-        assertEquals("Must load exactly 6 built-in skins", 6, skins.size)
+        assertEquals("Must load exactly 7 built-in skins", 7, skins.size)
 
         val ids = skins.map { it.id }
         for (expectedId in SkinRepository.BUILT_IN_IDS) {
@@ -43,7 +43,9 @@ class SkinRepositoryTest {
             assertEquals("Schema must be 1", 1, skin.schema)
             assertTrue("Name en must be non-blank", skin.name.en.isNotBlank())
             assertEquals("Padding size must be 4", 4, skin.panel.padding.size)
-            assertTrue("keyboardFraction in range", skin.panel.keyboardFraction in 0.3f..0.45f)
+            // A tall portrait screen needs a smaller share for the same key height
+            val range = if (skin.isPortrait) 0.15f..0.40f else 0.3f..0.45f
+            assertTrue("keyboardFraction in range", skin.panel.keyboardFraction in range)
             assertTrue("minKeyboardDp positive", skin.panel.minKeyboardDp > 0f)
             assertTrue("Palette non-blank", skin.palette.isNotBlank())
         }

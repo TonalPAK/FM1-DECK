@@ -1,6 +1,7 @@
 package io.github.fm1deck
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
@@ -92,6 +93,10 @@ class MainActivity : ComponentActivity() {
         // Load skins & palettes
         val userSkinsDir = File(filesDir, "skins")
         skinsState.value = SkinRepository.loadAll(assets, userSkinsDir)
+        // Start in the saved skin's orientation (the manifest's default is landscape), so a portrait start does not turn
+        if (skinsState.value.firstOrNull { it.id == loadedSettings.activeSkinId }?.isPortrait == true) {
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        }
 
         if (BuildConfig.DEBUG) {
             handleDebugIntent(intent)
@@ -163,11 +168,24 @@ class MainActivity : ComponentActivity() {
                 )
 
                 if (activeSkin != null) {
-                    // Apply keyboardFraction setting override
+                    // The phone turns with the skin: portrait skins hold it upright, the others sideways
+                    LaunchedEffect(activeSkin.isPortrait) {
+                        requestedOrientation = if (activeSkin.isPortrait) {
+                            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                        } else {
+                            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                        }
+                    }
+
+                    // Apply keyboardFraction setting override. A portrait skin scales its own share by the setting
+                    // (the setting's range is made for landscape: 36 % of a tall screen would be far too much)
                     val customSkin = remember(activeSkin, settings.keyboardFraction) {
-                        activeSkin.copy(
-                            panel = activeSkin.panel.copy(keyboardFraction = settings.keyboardFraction)
-                        )
+                        val fraction = if (activeSkin.isPortrait) {
+                            activeSkin.panel.keyboardFraction * settings.keyboardFraction / AppSettings.DEFAULT_KEYBOARD_FRACTION
+                        } else {
+                            settings.keyboardFraction
+                        }
+                        activeSkin.copy(panel = activeSkin.panel.copy(keyboardFraction = fraction))
                     }
 
                     val geometry = remember(customSkin, constraints.maxWidth, constraints.maxHeight, density, safeInsets) {

@@ -25,8 +25,8 @@ class SkinLayoutTest {
     @Test
     fun testLayoutOnSamsungAndPocoDimensions() {
         val skinsDir = findSkinsDir()
-        val skins = SkinRepository.loadFromDirectory(skinsDir)
-        assertEquals("Must load 6 skins", 6, skins.size)
+        val skins = SkinRepository.loadFromDirectory(skinsDir).filter { !it.isPortrait }
+        assertEquals("Must load 6 landscape skins", 6, skins.size)
 
         // Samsung Galaxy M52: 914 x 411 dp @ 2.625
         val samsungDensity = 2.625f
@@ -268,7 +268,7 @@ class SkinLayoutTest {
     @Test
     fun testSymmetricMarginsWithCutouts() {
         val skinsDir = findSkinsDir()
-        val skins = SkinRepository.loadFromDirectory(skinsDir)
+        val skins = SkinRepository.loadFromDirectory(skinsDir).filter { !it.isPortrait }
 
         val samsungDensity = 2.625f
         val samsungW = 914f * samsungDensity
@@ -322,7 +322,7 @@ class SkinLayoutTest {
 
     @Test
     fun testSettingsDotInsideRoundedCorner() {
-        val skins = SkinRepository.loadFromDirectory(findSkinsDir())
+        val skins = SkinRepository.loadFromDirectory(findSkinsDir()).filter { !it.isPortrait }
         // Measured corner radii: Samsung M52 84 px, POCO C75 64 px
         for ((w, h, r) in listOf(Triple(2400f, 1080f, 84f), Triple(1640f, 720f, 64f))) {
             for (skin in skins) {
@@ -333,6 +333,95 @@ class SkinLayoutTest {
                 assertTrue("Dot visible inside the ${r}px corner for ${skin.id}: $reach", reach <= r - 2f)
                 assertGearClear(g, "corner $r for ${skin.id}")
             }
+        }
+    }
+
+    /**
+     * The portrait "gamepad" skin on both phones held upright (camera cutout at the top): every control on screen and
+     * above the keyboard, nothing overlapping, the side knobs beside the LCD, F right of OCT, and every control's
+     * centre hit-tests as itself.
+     */
+    @Test
+    fun testPortraitLayout() {
+        val skin = SkinRepository.loadFromDirectory(findSkinsDir()).first { it.id == "portrait" }
+        assertTrue(skin.isPortrait)
+        val phones = listOf(
+            Triple("Samsung", Pair(1080f, 2400f), 2.625f) to Insets(top = 80f, cornerRadius = 84f),
+            Triple("POCO", Pair(720f, 1640f), 2.0f) to Insets(top = 60f, cornerRadius = 64f)
+        )
+        for ((phone, insets) in phones) {
+            val (name, size, density) = phone
+            val (w, h) = size
+            val g = SkinLayout.calculate(skin, w, h, density, insets)
+            val label = "portrait on $name"
+
+            assertEquals("27 keys in $label", 27, g.keys.size)
+            assertEquals("Keyboard full width in $label", w - 4f * g.u, g.keyboardRect.width, 0.5f)
+            assertTrue("Keyboard on screen in $label", g.keyboardRect.bottom <= h)
+            // 16 white keys across an upright phone: a ~22 dp pitch on a 360 dp screen (the cell is the touch target)
+            for (k in g.keys) {
+                assertTrue("Key ${k.bit} pill at least 16 dp wide in $label", k.capsuleRect.width >= 16f * density)
+                if (!k.isBlack) assertTrue("Key ${k.bit} cell at least 20 dp wide in $label", k.hitRect.width >= 20f * density)
+            }
+
+            val lcd = g.screen.lcdRect
+            assertEquals("LCD square in $label", lcd.width, lcd.height, 0.5f)
+            assertTrue("LCD at least half the width in $label", lcd.width >= w * 0.5f)
+            assertTrue("LCD below the cutout in $label", g.screen.frameRect.top >= insets.top)
+            assertEquals("LCD centred in $label", w / 2f, lcd.centerX, 0.5f)
+
+            // Everything above the keyboard and on screen
+            val controls = g.buttons.map { it.rect } + g.fnRect + g.screen.frameRect +
+                (g.knobs.map { it.knobCenter to it.knobRadius } + (g.masterPot.knobCenter to g.masterPot.knobRadius))
+                    .map { (c, r) -> Rect(c.x - r, c.y - r, c.x + r, c.y + r) }
+            for (r in controls) {
+                assertTrue("Control $r on screen in $label", r.left >= 0f && r.right <= w && r.top >= insets.top)
+                assertTrue("Control $r above the keyboard in $label", r.bottom <= g.keyboardRect.top)
+            }
+            for (i in controls.indices) for (j in i + 1 until controls.size) {
+                assertFalse("Controls ${controls[i]} and ${controls[j]} overlap in $label", controls[i].intersects(controls[j]))
+            }
+
+            // PRESETS / ALGORITHM left of the screen, MASTER / SELECT right of it, upper before lower
+            fun knob(role: Int) = g.knobs.first { it.role == role }
+            val preset = knob(SkinLayout.ROLE_PRESET); val algo = knob(SkinLayout.ROLE_ALGO)
+            val select = knob(SkinLayout.ROLE_SELECT); val master = g.masterPot
+            assertTrue("PRESETS left of the screen in $label", preset.knobCenter.x + preset.knobRadius <= g.screen.frameRect.left)
+            assertTrue("ALGORITHM left of the screen in $label", algo.knobCenter.x + algo.knobRadius <= g.screen.frameRect.left)
+            assertTrue("MASTER right of the screen in $label", master.knobCenter.x - master.knobRadius >= g.screen.frameRect.right)
+            assertTrue("SELECT right of the screen in $label", select.knobCenter.x - select.knobRadius >= g.screen.frameRect.right)
+            assertTrue("PRESETS above ALGORITHM in $label", preset.knobCenter.y < algo.knobCenter.y)
+            assertTrue("MASTER above SELECT in $label", master.knobCenter.y < select.knobCenter.y)
+
+            // KNOB 1-4 below the screen, the buttons below them, OCT below the buttons, F right of OCT
+            val k1 = knob(SkinLayout.ROLE_K1)
+            val btnTop = g.buttons.filter { it.index <= 11 }.minOf { it.rect.top }
+            val btnBottom = g.buttons.filter { it.index <= 11 }.maxOf { it.rect.bottom }
+            assertTrue("KNOB row below the screen in $label", k1.knobCenter.y - k1.knobRadius > g.screen.frameRect.bottom)
+            assertTrue("Buttons below the KNOB row in $label", btnTop > k1.knobCenter.y + k1.knobRadius)
+            assertTrue("OCT below the buttons in $label", g.octTray.top >= btnBottom)
+            assertTrue("F right of OCT in $label", g.fnRect.left >= g.octTray.right)
+            for (i in 0..11) {
+                val b = g.buttons.first { it.index == i }
+                assertTrue("Button $i at least 40 dp wide in $label", b.rect.width >= 40f * density)
+            }
+
+            // Hit-testing: each control's centre is that control
+            for (b in g.buttons) {
+                assertEquals("Button ${b.index} hit in $label", PanelTarget.Button(b.index), g.hitTest(b.rect.centerX, b.rect.centerY))
+            }
+            for (k in g.knobs) {
+                assertEquals("Knob ${k.defaultLabel} hit in $label", PanelTarget.Knob(k.role), g.hitTest(k.knobCenter.x, k.knobCenter.y))
+            }
+            assertEquals("MASTER hit in $label", PanelTarget.MasterPot, g.hitTest(master.knobCenter.x, master.knobCenter.y))
+            assertEquals("F hit in $label", PanelTarget.Fn, g.hitTest(g.fnRect.centerX, g.fnRect.centerY))
+            for (k in g.keys) {
+                assertEquals("Key ${k.bit} hit in $label", PanelTarget.Key(k.bit), g.hitTest(k.capsuleRect.centerX, k.capsuleRect.centerY))
+            }
+
+            // The settings dot: inside the rounded corner, its target clear of every control
+            val gear = g.gear.hitRect
+            for (r in controls) assertFalse("Settings target covers $r in $label", gear.intersects(r))
         }
     }
 

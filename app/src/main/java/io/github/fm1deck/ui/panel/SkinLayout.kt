@@ -235,6 +235,7 @@ object SkinLayout {
         density: Float,
         safeInsets: Insets = Insets.ZERO
     ): PanelGeometry {
+        if (skin.isPortrait) return calculatePortrait(skin, widthPx, heightPx, density, safeInsets)
         val m = maxOf(safeInsets.left, safeInsets.right)
         val safeTop = safeInsets.top
         val safeBottom = safeInsets.bottom
@@ -295,98 +296,9 @@ object SkinLayout {
             )
         }
 
-        // Lay out screen: largest square that fits its block minus frame padding (3 * u)
-        val screenBounds = blockBoundsMap[BlockId.SCREEN] ?: Rect(0f, 0f, 0f, 0f)
-        val frameSize = minOf(screenBounds.width, screenBounds.height)
-        val frameRect = Rect(
-            left = screenBounds.centerX - frameSize / 2f,
-            top = screenBounds.centerY - frameSize / 2f,
-            right = screenBounds.centerX + frameSize / 2f,
-            bottom = screenBounds.centerY + frameSize / 2f
-        )
-        // The bezel around the 240 x 240 panel: at least 3 u, else 1/48 of the side (the emulator uses 1/32)
-        val framePadding = maxOf(3f * u, frameSize / 48f)
-        val lcdSize = frameSize - 2f * framePadding
-        val lcdRect = Rect(
-            left = frameRect.centerX - lcdSize / 2f,
-            top = frameRect.centerY - lcdSize / 2f,
-            right = frameRect.centerX + lcdSize / 2f,
-            bottom = frameRect.centerY + lcdSize / 2f
-        )
-        val screenElement = PanelElement.Screen(
-            bounds = screenBounds,
-            frameRect = frameRect,
-            lcdRect = lcdRect
-        )
-
-        // Lay out knobs block (K1..K4)
-        val knobsBounds = blockBoundsMap[BlockId.KNOBS] ?: Rect(0f, 0f, 0f, 0f)
-        val kColW = knobsBounds.width / 4f
-        val kLabelH = minOf(18f * u, knobsBounds.height * 0.28f)
-        val kKnobH = knobsBounds.height - kLabelH
-        val kKnobDiameter = minOf(kColW * 0.72f, kKnobH * 0.82f)
-        val kKnobRadius = kKnobDiameter / 2f
-
-        val knobsList = mutableListOf<PanelElement.Knob>()
-        val kRoles = intArrayOf(ROLE_K1, ROLE_K2, ROLE_K3, ROLE_K4)
-        for (i in 0..3) {
-            val colLeft = knobsBounds.left + i * kColW
-            val colRight = colLeft + kColW
-            val colRect = Rect(colLeft, knobsBounds.top, colRight, knobsBounds.bottom)
-            val centerY = knobsBounds.top + kLabelH + kKnobH / 2f
-            knobsList.add(
-                PanelElement.Knob(
-                    role = kRoles[i],
-                    hitRect = colRect,
-                    knobCenter = Point(colRect.centerX, centerY),
-                    knobRadius = kKnobRadius,
-                    defaultLabel = "KNOB ${i + 1}"
-                )
-            )
-        }
-
-        // Lay out buttons block (2x6)
-        // The block is the dark tray; the twelve buttons sit inside it with the emulator's grooves
-        val buttonsBlock = blockBoundsMap[BlockId.BUTTONS] ?: Rect(0f, 0f, 0f, 0f)
-        val trayPad = 6f * u
-        val buttonsBounds = Rect(
-            buttonsBlock.left + trayPad, buttonsBlock.top + trayPad,
-            buttonsBlock.right - trayPad, buttonsBlock.bottom - trayPad
-        )
-        val btnGapX = 6f * u
-        val btnGapY = 7f * u
-        val btnW = (buttonsBounds.width - 5f * btnGapX) / 6f
-        val btnH = (buttonsBounds.height - btnGapY) / 2f
-
-        val buttonsList = mutableListOf<PanelElement.Button>()
-        // Row 0
-        for (c in 0..5) {
-            val bLeft = buttonsBounds.left + c * (btnW + btnGapX)
-            val bTop = buttonsBounds.top
-            val bRect = Rect(bLeft, bTop, bLeft + btnW, bTop + btnH)
-            buttonsList.add(
-                PanelElement.Button(
-                    index = c,
-                    rect = bRect,
-                    hitRect = bRect,
-                    label = ROW0_BUTTON_LABELS[c]
-                )
-            )
-        }
-        // Row 1
-        for (c in 0..5) {
-            val bLeft = buttonsBounds.left + c * (btnW + btnGapX)
-            val bTop = buttonsBounds.top + btnH + btnGapY
-            val bRect = Rect(bLeft, bTop, bLeft + btnW, bTop + btnH)
-            buttonsList.add(
-                PanelElement.Button(
-                    index = 6 + c,
-                    rect = bRect,
-                    hitRect = bRect,
-                    label = ROW1_BUTTON_LABELS[c]
-                )
-            )
-        }
+        val screenElement = layoutScreen(blockBoundsMap[BlockId.SCREEN] ?: Rect(0f, 0f, 0f, 0f), u)
+        val knobsList = layoutKnobRow(blockBoundsMap[BlockId.KNOBS] ?: Rect(0f, 0f, 0f, 0f), u)
+        val buttonsList = layoutButtonGrid(blockBoundsMap[BlockId.BUTTONS] ?: Rect(0f, 0f, 0f, 0f), u)
 
         // Lay out system block: 2x2 knobs + OCT-/OCT+
         val sysBounds = blockBoundsMap[BlockId.SYSTEM] ?: Rect(0f, 0f, 0f, 0f)
@@ -482,89 +394,9 @@ object SkinLayout {
 
         // OCT- / OCT+ on their own dark island at the bottom of the system block
         val octTray = Rect(sysBounds.left, sysBounds.bottom - octH, sysBounds.right, sysBounds.bottom)
-        val octPadY = octH * 0.16f
-        val octPadX = 5f * u
-        val octGapX = 8f * u
-        val octW = (octTray.width - 2f * octPadX - octGapX) / 2f
-        val octTop = octTray.top + octPadY
-        val octBottom = octTray.bottom - octPadY
-        val octDnRect = Rect(octTray.left + octPadX, octTop, octTray.left + octPadX + octW, octBottom)
-        val octUpRect = Rect(octDnRect.right + octGapX, octTop, octTray.right - octPadX, octBottom)
-        buttonsList.add(
-            PanelElement.Button(
-                index = BTN_OCTDN,
-                rect = octDnRect,
-                hitRect = Rect(octTray.left, octTray.top, octTray.centerX, octTray.bottom),
-                label = "OCT-"
-            )
-        )
-        buttonsList.add(
-            PanelElement.Button(
-                index = BTN_OCTUP,
-                rect = octUpRect,
-                hitRect = Rect(octTray.centerX, octTray.top, octTray.right, octTray.bottom),
-                label = "OCT+"
-            )
-        )
+        buttonsList.addAll(layoutOct(octTray, u))
 
-        // Lay out keyboard (27 keys: 16 white, 11 black) after the emulator's keybed: a side inset of 12/928 of the
-        // width, capsules 0.78 of the pitch wide and 0.425 of the bed high, centred on 1/4 and 3/4 of its height, each
-        // with a slit down its middle (kw * 0.4 from both ends)
-        val bedInset = keyboardRect.width * (12f / 928f)
-        val keyStep = (keyboardRect.width - 2f * bedInset) / WHITE_KEYS_COUNT
-        val keyRowH = keyboardRect.height / 2f
-        val capsuleW = keyStep * 0.78f
-        val capsuleH = keyboardRect.height * 0.425f
-        val stripW = maxOf(2f * density, capsuleW * 0.14f)
-        val stripH = maxOf(capsuleH * 0.3f, capsuleH - capsuleW * 0.8f)
-        val keysLeft = keyboardRect.left + bedInset
-
-        val keysList = mutableListOf<PanelElement.Key>()
-
-        // 16 White keys (lower row)
-        for (i in 0 until WHITE_KEYS_COUNT) {
-            val bit = MW_WHITE_SEMITONES[i]
-            val cellLeft = if (i == 0) keyboardRect.left else keysLeft + i * keyStep
-            val cellRight = if (i == WHITE_KEYS_COUNT - 1) keyboardRect.right else keysLeft + (i + 1) * keyStep
-            val hitRect = Rect(cellLeft, keyboardRect.top + keyRowH, cellRight, keyboardRect.bottom)
-            val cx = keysLeft + (i + 0.5f) * keyStep
-            val cy = keyboardRect.top + keyboardRect.height * 0.75f
-            val capRect = Rect(cx - capsuleW / 2f, cy - capsuleH / 2f, cx + capsuleW / 2f, cy + capsuleH / 2f)
-            val stripRect = Rect(cx - stripW / 2f, cy - stripH / 2f, cx + stripW / 2f, cy + stripH / 2f)
-            keysList.add(
-                PanelElement.Key(
-                    bit = bit,
-                    isBlack = false,
-                    hitRect = hitRect,
-                    capsuleRect = capRect,
-                    stripRect = stripRect
-                )
-            )
-        }
-
-        // 11 Black keys (upper row)
-        for (wi in MW_BLACK_AFTER_WHITE) {
-            val bit = MW_WHITE_SEMITONES[wi] + 1
-            val cx = keysLeft + (wi + 1) * keyStep
-            val cy = keyboardRect.top + keyboardRect.height * 0.25f
-            val capRect = Rect(cx - capsuleW / 2f, cy - capsuleH / 2f, cx + capsuleW / 2f, cy + capsuleH / 2f)
-            val stripRect = Rect(cx - stripW / 2f, cy - stripH / 2f, cx + stripW / 2f, cy + stripH / 2f)
-            val hitW = keyStep * 0.90f
-            val hitRect = Rect(cx - hitW / 2f, keyboardRect.top, cx + hitW / 2f, keyboardRect.top + keyRowH)
-            keysList.add(
-                PanelElement.Key(
-                    bit = bit,
-                    isBlack = true,
-                    hitRect = hitRect,
-                    capsuleRect = capRect,
-                    stripRect = stripRect
-                )
-            )
-        }
-
-        // Sort keys by bit index (0..26)
-        keysList.sortBy { it.bit }
-
+        val keysList = layoutKeybed(keyboardRect, density)
 
         // Separators
         val separatorsList = mutableListOf<SeparatorLine>()
@@ -632,6 +464,331 @@ object SkinLayout {
             fnRect = fnRect,
             fnHitRect = fnHitRect
         )
+    }
+
+    /**
+     * The portrait "gamepad" layout: the screen centred at the top with PRESETS / ALGORITHM on its left and
+     * MASTER / SELECT on its right, KNOB 1-4 in a row, the 2x6 buttons across the width, OCT- / OCT+ centred with F to
+     * their right, the keyboard at the bottom. u = safe width / 440, so the controls keep their landscape proportions.
+     * Sizes are natural heights in u; spare height goes into the buttons (up to +40 u) and the gaps, a short screen
+     * shrinks everything above the keyboard.
+     */
+    private fun calculatePortrait(
+        skin: Skin,
+        widthPx: Float,
+        heightPx: Float,
+        density: Float,
+        safeInsets: Insets
+    ): PanelGeometry {
+        val left = safeInsets.left
+        val right = widthPx - safeInsets.right
+        val safeTop = safeInsets.top
+        val safeBottom = heightPx - safeInsets.bottom
+        val safeHeight = safeBottom - safeTop
+        val u = (right - left) / 440f
+        val pad = skin.panel.padding
+        val padH = maxOf(pad[0], pad[2]) * u
+        val contentLeft = left + padH
+        val contentRight = right - padH
+
+        val keyboardHeight = maxOf(safeHeight * skin.panel.keyboardFraction, skin.panel.minKeyboardDp * density)
+        val keyboardMargin = 2f * u
+        val keyboardRect = Rect(
+            left = left + keyboardMargin,
+            top = safeBottom - pad[3] * u - keyboardHeight,
+            right = right - keyboardMargin,
+            bottom = safeBottom - pad[3] * u
+        )
+
+        // Natural heights, u: top gap, screen, gap, KNOB row, gap, buttons, gap, OCT, gap to the keyboard
+        val gaps = floatArrayOf(pad[1], 16f, 14f, 6f, skin.panel.gap)
+        val gapWeights = floatArrayOf(1f, 1f, 1f, 0.5f, 1f)
+        var screenH = 240f
+        var knobRowH = 66f
+        var buttonsH = 104f
+        var octH = 42f
+        val avail = (keyboardRect.top - safeTop) / u
+        val natural = gaps.sum() + screenH + knobRowH + buttonsH + octH
+        if (avail >= natural) {
+            // Spare height: bigger buttons first (pads for thumbs), then bigger KNOBs, the rest into the gaps
+            val extra = avail - natural
+            val toButtons = minOf(extra * 0.4f, 40f)
+            buttonsH += toButtons
+            val toKnobs = minOf((extra - toButtons) * 0.6f, 40f)
+            knobRowH += toKnobs
+            val rest = extra - toButtons - toKnobs
+            val wSum = gapWeights.sum()
+            for (i in gaps.indices) gaps[i] += rest * gapWeights[i] / wSum
+        } else {
+            val s = avail / natural
+            for (i in gaps.indices) gaps[i] *= s
+            screenH *= s; knobRowH *= s; buttonsH *= s; octH *= s
+        }
+
+        var y = safeTop + gaps[0] * u
+        val screenSide = minOf(screenH * u, (contentRight - contentLeft) * 0.6f)
+        val cx = (left + right) / 2f
+        val screenBounds = Rect(cx - screenSide / 2f, y, cx + screenSide / 2f, y + screenSide)
+        y += screenH * u + gaps[1] * u
+        val knobsBounds = Rect(contentLeft, y, contentRight, y + knobRowH * u)
+        y += knobRowH * u + gaps[2] * u
+        val buttonsBlock = Rect(contentLeft, y, contentRight, y + buttonsH * u)
+        y += buttonsH * u + gaps[3] * u
+        val octW = minOf(212f * u, (contentRight - contentLeft) * 0.5f)
+        val octTray = Rect(cx - octW / 2f, y, cx + octW / 2f, y + octH * u)
+
+        val screenElement = layoutScreen(screenBounds, u)
+        val knobsList = layoutKnobRow(knobsBounds, u)
+        val buttonsList = layoutButtonGrid(buttonsBlock, u)
+        buttonsList.addAll(layoutOct(octTray, u))
+
+        // The side knobs: two columns beside the screen, in its lower part (the upper rows at 0.58 of the screen's
+        // height, the lower ones at 0.865, as the reference collage)
+        val sideGap = 6f * u
+        val leftCol = Rect(contentLeft, screenBounds.top, screenBounds.left - sideGap, screenBounds.bottom)
+        val rightCol = Rect(screenBounds.right + sideGap, screenBounds.top, contentRight, screenBounds.bottom)
+        val sideR = minOf(leftCol.width * 0.30f, 22f * u * screenSide / (240f * u))
+        val y1 = screenBounds.top + screenSide * 0.58f
+        val y2 = screenBounds.top + screenSide * 0.865f
+        val yMid = (y1 + y2) / 2f
+        val hitTop = screenBounds.top + screenSide * 0.30f
+        fun sideKnob(col: Rect, upper: Boolean, role: Int, label: String) = PanelElement.Knob(
+            role = role,
+            hitRect = if (upper) Rect(col.left, hitTop, col.right, yMid) else Rect(col.left, yMid, col.right, col.bottom),
+            knobCenter = Point(col.centerX, if (upper) y1 else y2),
+            knobRadius = sideR,
+            defaultLabel = label
+        )
+        knobsList.add(sideKnob(leftCol, true, ROLE_PRESET, "PRESETS"))
+        knobsList.add(sideKnob(leftCol, false, ROLE_ALGO, "ALGORITHM"))
+        knobsList.add(sideKnob(rightCol, false, ROLE_SELECT, "SELECT"))
+        val masterPot = PanelElement.MasterPot(
+            hitRect = Rect(rightCol.left, hitTop, rightCol.right, yMid),
+            knobCenter = Point(rightCol.centerX, y1),
+            knobRadius = sideR
+        )
+
+        // F (latch) right of the OCT island, centred between it and the content edge
+        val fnW = 28f * u
+        val fnH = minOf(23f * u, octTray.height * 0.6f)
+        val fnCx = minOf((octTray.right + contentRight) / 2f, octTray.right + 12f * u + fnW / 2f)
+        val fnRect = Rect(fnCx - fnW / 2f, octTray.centerY - fnH / 2f, fnCx + fnW / 2f, octTray.centerY + fnH / 2f)
+        val fnHitRect = Rect(fnRect.left - 6f * u, octTray.top, fnRect.right + 6f * u, octTray.bottom)
+
+        val keysList = layoutKeybed(keyboardRect, density)
+
+        val gearRadius = GEAR_DOT_U * u
+        val cornerR = safeInsets.cornerRadius
+        val inCorner = if (cornerR > 0f) cornerR - (cornerR - gearRadius - GEAR_RIM_U * u) / SQRT2 else 0f
+        val gearCenter = Point(maxOf(left + padH * 0.5f, inCorner), maxOf(safeTop + pad[1] * u * 0.5f, inCorner))
+
+        // The system block has no plate of its own here: its knobs flank the screen and OCT sits on its island
+        val blockRects = mapOf(
+            BlockId.SCREEN to screenBounds,
+            BlockId.KNOBS to knobsBounds,
+            BlockId.BUTTONS to buttonsBlock,
+            BlockId.SYSTEM to Rect(0f, 0f, 0f, 0f)
+        )
+        val blocks = BlockId.entries.associateWith { id ->
+            BlockGeometry(blockId = id, bounds = blockRects.getValue(id), hasFrame = skin.frames.hasFrame(id))
+        }
+
+        return PanelGeometry(
+            skinId = skin.id,
+            widthPx = widthPx,
+            heightPx = heightPx,
+            density = density,
+            safeInsets = safeInsets,
+            u = u,
+            topAreaRect = Rect(contentLeft, safeTop, contentRight, keyboardRect.top),
+            keyboardRect = keyboardRect,
+            blocks = blocks,
+            buttons = buttonsList,
+            knobs = knobsList,
+            masterPot = masterPot,
+            keys = keysList,
+            screen = screenElement,
+            gear = PanelElement.Gear(
+                hitRect = fitGearTarget(
+                    left, safeTop, density, knobsList, masterPot, buttonsList, screenElement.lcdRect, keyboardRect, fnRect
+                ),
+                center = gearCenter,
+                radius = gearRadius
+            ),
+            separators = emptyList(),
+            octTray = octTray,
+            fnRect = fnRect,
+            fnHitRect = fnHitRect
+        )
+    }
+
+    /** The screen block: the largest square in [bounds], a bezel of at least 3 u (else 1/48 of the side), the LCD. */
+    private fun layoutScreen(bounds: Rect, u: Float): PanelElement.Screen {
+        val frameSize = minOf(bounds.width, bounds.height)
+        val frameRect = Rect(
+            left = bounds.centerX - frameSize / 2f,
+            top = bounds.centerY - frameSize / 2f,
+            right = bounds.centerX + frameSize / 2f,
+            bottom = bounds.centerY + frameSize / 2f
+        )
+        // The bezel around the 240 x 240 panel: at least 3 u, else 1/48 of the side (the emulator uses 1/32)
+        val framePadding = maxOf(3f * u, frameSize / 48f)
+        val lcdSize = frameSize - 2f * framePadding
+        val lcdRect = Rect(
+            left = frameRect.centerX - lcdSize / 2f,
+            top = frameRect.centerY - lcdSize / 2f,
+            right = frameRect.centerX + lcdSize / 2f,
+            bottom = frameRect.centerY + lcdSize / 2f
+        )
+        return PanelElement.Screen(bounds = bounds, frameRect = frameRect, lcdRect = lcdRect)
+    }
+
+    /** KNOB 1..4 in four equal columns, each a label strip over its knob. */
+    private fun layoutKnobRow(bounds: Rect, u: Float): MutableList<PanelElement.Knob> {
+        val kColW = bounds.width / 4f
+        val kLabelH = minOf(18f * u, bounds.height * 0.28f)
+        val kKnobH = bounds.height - kLabelH
+        val kKnobDiameter = minOf(kColW * 0.72f, kKnobH * 0.82f)
+        val kKnobRadius = kKnobDiameter / 2f
+
+        val knobsList = mutableListOf<PanelElement.Knob>()
+        val kRoles = intArrayOf(ROLE_K1, ROLE_K2, ROLE_K3, ROLE_K4)
+        for (i in 0..3) {
+            val colLeft = bounds.left + i * kColW
+            val colRect = Rect(colLeft, bounds.top, colLeft + kColW, bounds.bottom)
+            val centerY = bounds.top + kLabelH + kKnobH / 2f
+            knobsList.add(
+                PanelElement.Knob(
+                    role = kRoles[i],
+                    hitRect = colRect,
+                    knobCenter = Point(colRect.centerX, centerY),
+                    knobRadius = kKnobRadius,
+                    defaultLabel = "KNOB ${i + 1}"
+                )
+            )
+        }
+        return knobsList
+    }
+
+    /** The 2x6 buttons: [block] is the dark tray, the twelve buttons sit inside it with the emulator's grooves. */
+    private fun layoutButtonGrid(block: Rect, u: Float): MutableList<PanelElement.Button> {
+        val trayPad = 6f * u
+        val buttonsBounds = Rect(block.left + trayPad, block.top + trayPad, block.right - trayPad, block.bottom - trayPad)
+        val btnGapX = 6f * u
+        val btnGapY = 7f * u
+        val btnW = (buttonsBounds.width - 5f * btnGapX) / 6f
+        val btnH = (buttonsBounds.height - btnGapY) / 2f
+
+        val buttonsList = mutableListOf<PanelElement.Button>()
+        for (r in 0..1) {
+            for (c in 0..5) {
+                val bLeft = buttonsBounds.left + c * (btnW + btnGapX)
+                val bTop = buttonsBounds.top + r * (btnH + btnGapY)
+                val bRect = Rect(bLeft, bTop, bLeft + btnW, bTop + btnH)
+                buttonsList.add(
+                    PanelElement.Button(
+                        index = r * 6 + c,
+                        rect = bRect,
+                        hitRect = bRect,
+                        label = if (r == 0) ROW0_BUTTON_LABELS[c] else ROW1_BUTTON_LABELS[c]
+                    )
+                )
+            }
+        }
+        return buttonsList
+    }
+
+    /** OCT- / OCT+ on their dark island [octTray]; each one's target is its half of the island. */
+    private fun layoutOct(octTray: Rect, u: Float): List<PanelElement.Button> {
+        val octPadY = octTray.height * 0.16f
+        val octPadX = 5f * u
+        val octGapX = 8f * u
+        val octW = (octTray.width - 2f * octPadX - octGapX) / 2f
+        val octTop = octTray.top + octPadY
+        val octBottom = octTray.bottom - octPadY
+        val octDnRect = Rect(octTray.left + octPadX, octTop, octTray.left + octPadX + octW, octBottom)
+        val octUpRect = Rect(octDnRect.right + octGapX, octTop, octTray.right - octPadX, octBottom)
+        return listOf(
+            PanelElement.Button(
+                index = BTN_OCTDN,
+                rect = octDnRect,
+                hitRect = Rect(octTray.left, octTray.top, octTray.centerX, octTray.bottom),
+                label = "OCT-"
+            ),
+            PanelElement.Button(
+                index = BTN_OCTUP,
+                rect = octUpRect,
+                hitRect = Rect(octTray.centerX, octTray.top, octTray.right, octTray.bottom),
+                label = "OCT+"
+            )
+        )
+    }
+
+    /**
+     * The keyboard (27 keys: 16 white, 11 black) after the emulator's keybed: a side inset of 12/928 of the width,
+     * capsules 0.78 of the pitch wide and 0.425 of the bed high, centred on 1/4 and 3/4 of its height, each with a slit
+     * down its middle (kw * 0.4 from both ends).
+     */
+    private fun layoutKeybed(keyboardRect: Rect, density: Float): List<PanelElement.Key> {
+        val bedInset = keyboardRect.width * (12f / 928f)
+        val keyStep = (keyboardRect.width - 2f * bedInset) / WHITE_KEYS_COUNT
+        val keyRowH = keyboardRect.height / 2f
+        val capsuleW = keyStep * 0.78f
+        val capsuleH = keyboardRect.height * 0.425f
+        val stripW = maxOf(2f * density, capsuleW * 0.14f)
+        // The slit starts kw * 0.4 below the capsule top, but leaves at least 15 dp there for the note name (narrow
+        // portrait keys); it ends kw * 0.4 above the bottom
+        val slitTopGap = maxOf(capsuleW * 0.4f, 15f * density)
+        val stripH = maxOf(capsuleH * 0.3f, capsuleH - slitTopGap - capsuleW * 0.4f)
+        val stripShift = (slitTopGap - capsuleW * 0.4f) / 2f // the slit moves down by half the extra top gap
+        val keysLeft = keyboardRect.left + bedInset
+
+        val keysList = mutableListOf<PanelElement.Key>()
+
+        // 16 White keys (lower row)
+        for (i in 0 until WHITE_KEYS_COUNT) {
+            val bit = MW_WHITE_SEMITONES[i]
+            val cellLeft = if (i == 0) keyboardRect.left else keysLeft + i * keyStep
+            val cellRight = if (i == WHITE_KEYS_COUNT - 1) keyboardRect.right else keysLeft + (i + 1) * keyStep
+            val hitRect = Rect(cellLeft, keyboardRect.top + keyRowH, cellRight, keyboardRect.bottom)
+            val cx = keysLeft + (i + 0.5f) * keyStep
+            val cy = keyboardRect.top + keyboardRect.height * 0.75f
+            val capRect = Rect(cx - capsuleW / 2f, cy - capsuleH / 2f, cx + capsuleW / 2f, cy + capsuleH / 2f)
+            val stripRect = Rect(cx - stripW / 2f, cy + stripShift - stripH / 2f, cx + stripW / 2f, cy + stripShift + stripH / 2f)
+            keysList.add(
+                PanelElement.Key(
+                    bit = bit,
+                    isBlack = false,
+                    hitRect = hitRect,
+                    capsuleRect = capRect,
+                    stripRect = stripRect
+                )
+            )
+        }
+
+        // 11 Black keys (upper row)
+        for (wi in MW_BLACK_AFTER_WHITE) {
+            val bit = MW_WHITE_SEMITONES[wi] + 1
+            val cx = keysLeft + (wi + 1) * keyStep
+            val cy = keyboardRect.top + keyboardRect.height * 0.25f
+            val capRect = Rect(cx - capsuleW / 2f, cy - capsuleH / 2f, cx + capsuleW / 2f, cy + capsuleH / 2f)
+            val stripRect = Rect(cx - stripW / 2f, cy + stripShift - stripH / 2f, cx + stripW / 2f, cy + stripShift + stripH / 2f)
+            val hitW = keyStep * 0.90f
+            val hitRect = Rect(cx - hitW / 2f, keyboardRect.top, cx + hitW / 2f, keyboardRect.top + keyRowH)
+            keysList.add(
+                PanelElement.Key(
+                    bit = bit,
+                    isBlack = true,
+                    hitRect = hitRect,
+                    capsuleRect = capRect,
+                    stripRect = stripRect
+                )
+            )
+        }
+
+        // Sort keys by bit index (0..26)
+        keysList.sortBy { it.bit }
+        return keysList
     }
 
     /** The settings dot's radius and its clearance from the rounded screen edge, u. */

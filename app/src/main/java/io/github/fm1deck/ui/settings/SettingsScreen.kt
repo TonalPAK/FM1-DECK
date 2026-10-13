@@ -362,22 +362,29 @@ private const val THUMB_REF_H = 411f
  */
 @Composable
 private fun SkinThumbnail(skin: Skin) {
+    // A portrait skin is laid out on the upright phone and drawn standing in the middle of the tile
+    val refW = if (skin.isPortrait) THUMB_REF_H else THUMB_REF_W
+    val refH = if (skin.isPortrait) THUMB_REF_W else THUMB_REF_H
     val geometry = remember(skin) {
-        SkinLayout.calculate(skin = skin, widthPx = THUMB_REF_W, heightPx = THUMB_REF_H, density = 1.0f)
+        SkinLayout.calculate(skin = skin, widthPx = refW, heightPx = refH, density = 1.0f)
     }
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val k = minOf(size.width / THUMB_REF_W, size.height / THUMB_REF_H)
-        val ox = (size.width - THUMB_REF_W * k) / 2f
-        val oy = (size.height - THUMB_REF_H * k) / 2f
+        val k = minOf(size.width / refW, size.height / refH)
+        val ox = (size.width - refW * k) / 2f
+        val oy = (size.height - refH * k) / 2f
         fun o(x: Float, y: Float) = Offset(ox + x * k, oy + y * k)
         fun sz(r: io.github.fm1deck.ui.panel.Rect) = Size(r.width * k, r.height * k)
         fun rr(r: io.github.fm1deck.ui.panel.Rect, color: Color, radius: Float) =
             drawRoundRect(color, o(r.left, r.top), sz(r), CornerRadius(radius * k))
 
-        drawRect(Color(0xFF1D1D1F))
+        if (skin.isPortrait) {
+            rr(io.github.fm1deck.ui.panel.Rect(0f, 0f, refW, refH), Color(0xFF1D1D1F), 20f)
+        } else {
+            drawRect(Color(0xFF1D1D1F))
+        }
         // islands
         for ((id, block) in geometry.blocks) {
-            if (id == BlockId.SCREEN) continue
+            if (id == BlockId.SCREEN || block.bounds.width <= 0f) continue
             val b = block.bounds
             val pad = 6f
             rr(io.github.fm1deck.ui.panel.Rect(b.left - pad, b.top - pad, b.right + pad, b.bottom + pad), Color(0xFF26262A), 14f)

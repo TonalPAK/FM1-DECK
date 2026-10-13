@@ -23,9 +23,13 @@ fills any landscape aspect (Samsung M52 ≈ 2.22:1, POCO C75 ≈ 2.28:1) without
   "frames": { "system": true, "buttons": true, "knobs": false, "screen": true },
   "separators": ["buttons/knobs"],      // thin line between two blocks of one column
   "palette": "graphite",                 // name in palettes.json (P2), colours for frames, keys, LEDs
-  "gear": "top-right"                    // optional: settings icon corner (top-left | top-right), default top-right
+  "gear": "top-right",                   // optional: settings icon corner (top-left | top-right), default top-right
+  "orientation": "landscape"             // optional: landscape (default) | portrait
 }
 ```
+
+A `"portrait"` skin uses the fixed gamepad layout (`SkinLayout.calculatePortrait`, docs/SKINS.md): `panel.top` is
+optional and ignored, `padding`, `gap`, `keyboardFraction` and `minKeyboardDp` still apply, u = safe width / 440.
 
 Node = `{ "type": "row" | "column", "gap": u, "weight": w, "children": [...] }`
 or a block leaf `{ "block": "system" | "buttons" | "knobs" | "screen", "weight": w, "align": "center" }`.

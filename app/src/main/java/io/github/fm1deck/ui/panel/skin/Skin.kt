@@ -72,6 +72,20 @@ enum class GearPosition(val jsonName: String) {
     }
 }
 
+/**
+ * How the phone is held. Landscape skins are laid out from their block tree; a portrait skin has one fixed
+ * "gamepad" layout (SkinLayout.calculatePortrait): the screen between the two pairs of side knobs, KNOB 1-4, the 2x6
+ * buttons, OCT with F, the keyboard at the bottom.
+ */
+enum class SkinOrientation(val jsonName: String) {
+    LANDSCAPE("landscape"),
+    PORTRAIT("portrait");
+
+    companion object {
+        fun fromJson(str: String?): SkinOrientation = if (str == "portrait") PORTRAIT else LANDSCAPE
+    }
+}
+
 data class SkinName(
     val en: String
 )
@@ -87,5 +101,8 @@ data class Skin(
     val separators: List<String>,
     val palette: String,
     val gear: GearPosition = GearPosition.TOP_RIGHT,
-    val isUserSkin: Boolean = false
-)
+    val isUserSkin: Boolean = false,
+    val orientation: SkinOrientation = SkinOrientation.LANDSCAPE
+) {
+    val isPortrait: Boolean get() = orientation == SkinOrientation.PORTRAIT
+}

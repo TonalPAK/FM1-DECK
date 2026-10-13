@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "portrait",
+  "order": 7,
+  "name": { "en": "Portrait (gamepad)" },
+  "orientation": "portrait",
+  "panel": {
+    "padding": [14, 14, 14, 8],
+    "gap": 10,
+    "keyboardFraction": 0.24,
+    "minKeyboardDp": 140
+  },
+  "frames": { "system": false, "buttons": false, "knobs": false, "screen": false },
+  "palette": "graphite"
+}

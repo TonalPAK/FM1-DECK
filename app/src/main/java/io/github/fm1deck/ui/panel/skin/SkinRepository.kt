@@ -19,7 +19,8 @@ object SkinRepository {
         "screen-left",
         "screen-left-knobs-top",
         "screen-center",
-        "screen-center-buttons-top"
+        "screen-center-buttons-top",
+        "portrait"
     )
 
     /**
@@ -39,10 +40,11 @@ object SkinRepository {
         val name = SkinName(en = nameEn)
 
         val reference = root.optString("reference", "")
+        val orientation = SkinOrientation.fromJson(root.optString("orientation", "landscape"))
 
         val panelObj = root.optJSONObject("panel")
             ?: throw IllegalArgumentException("Missing 'panel' object in skin $id")
-        val panel = parsePanelConfig(panelObj, id)
+        val panel = parsePanelConfig(panelObj, id, orientation)
 
         val framesObj = root.optJSONObject("frames")
             ?: throw IllegalArgumentException("Missing 'frames' object in skin $id")
@@ -88,11 +90,19 @@ object SkinRepository {
             separators = separators,
             palette = palette,
             gear = gear,
-            isUserSkin = isUserSkin
+            isUserSkin = isUserSkin,
+            orientation = orientation
         )
     }
 
-    private fun parsePanelConfig(obj: JSONObject, skinId: String): PanelConfig {
+    /** The blocks of the portrait layout, top to bottom (system = the side knobs and OCT). */
+    private val PORTRAIT_TREE: LayoutNode = ColumnNode(
+        weight = 1f,
+        gap = 0f,
+        children = listOf(BlockId.SCREEN, BlockId.KNOBS, BlockId.BUTTONS, BlockId.SYSTEM).map { BlockNode(it, 1f) }
+    )
+
+    private fun parsePanelConfig(obj: JSONObject, skinId: String, orientation: SkinOrientation): PanelConfig {
         val padArr = obj.optJSONArray("padding")
             ?: throw IllegalArgumentException("Missing 'padding' array in skin $skinId")
         require(padArr.length() == 4) { "Padding array must contain 4 values [left, top, right, bottom]" }
@@ -111,9 +121,13 @@ object SkinRepository {
         val minKeyboardDp = obj.optDouble("minKeyboardDp", 112.0).toFloat()
         require(minKeyboardDp > 0f) { "minKeyboardDp must be positive" }
 
+        // A portrait skin has a fixed layout (SkinLayout.calculatePortrait), so its block tree is optional
         val topObj = obj.optJSONObject("top")
-            ?: throw IllegalArgumentException("Missing 'top' node in skin $skinId")
-        val topNode = parseNode(topObj, defaultWeight = 1.0f)
+        val topNode = when {
+            topObj != null -> parseNode(topObj, defaultWeight = 1.0f)
+            orientation == SkinOrientation.PORTRAIT -> PORTRAIT_TREE
+            else -> throw IllegalArgumentException("Missing 'top' node in skin $skinId")
+        }
 
         return PanelConfig(
             padding = padding,
@@ -180,7 +194,7 @@ object SkinRepository {
     }
 
     /**
-     * Loads all 6 built-in skins from assets sorted by order.
+     * Loads all built-in skins from assets sorted by order.
      */
     fun loadAllBuiltIns(assetManager: AssetManager): List<Skin> {
         return BUILT_IN_IDS.map { loadBuiltIn(assetManager, it) }.sortedBy { it.order }

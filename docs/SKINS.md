@@ -23,6 +23,13 @@ Screenshots of every layout: [README](../README.md#six-layouts).
 | `screen-center` | system | screen | knobs over buttons |
 | `screen-center-buttons-top` | system | screen | buttons over knobs (like the original, but the transport above the encoders) |
 
+| `portrait` | — the phone held upright, like a gamepad: the screen on top between PRESETS/ALGORITHM (left) and MASTER/SELECT (right), KNOB 1–4, the 2×6 buttons, OCT−/OCT+ with F to the right, the keyboard at the bottom | | |
+
+The `portrait` skin (`"orientation": "portrait"`) is not laid out from a block tree: `SkinLayout.calculatePortrait`
+places the controls in that fixed order with u = safe width / 440. Spare height goes into the buttons, then KNOB 1–4,
+then the gaps; the keyboard takes `keyboardFraction` of the height (scaled by the "keyboard height" setting). The app
+turns to portrait while this skin is active.
+
 A new skin = a new JSON (a user skin can be imported too: Settings → Skin → "Import skin").
 
 ## 2. The layout engine
