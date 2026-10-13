@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Hortator** (DEADACTIVE's drum machine based on Felucca, DRUM-0.16.0) is the fourth built-in firmware: eight
+  drum tracks, steps, Grids, ACID bass, PERFORM; knob names on the panel follow its pages.
+- **Firmware updates:** Felucca 1.6, JIANT FM 0.6.75.
+
 ## 0.1.0 — preview (2026-10-13)
 
 First public preview.

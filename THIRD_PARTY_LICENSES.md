@@ -8,8 +8,10 @@ compatible with GPL-3.0. Keep this file current: a phase that adds code from els
 | Felucca (Leo Kuroshita / Hügelton Instruments) | `upstream/felucca` (submodule), firmware packs | GPL-3.0-only | unmodified; includes OFL fonts, msfa (Apache-2.0), Fukiai font (MIT) — see its `LICENSING.md` |
 | JIANT FM (juanjiant-bit) | `upstream/jiant`, packs | GPL-3.0-only | fork of Felucca; song mode from SLOOP |
 | SLOOP (isod89) | `upstream/sloop`, packs | GPL-3.0-only | based on Felucca |
+| Hortator (DEADACTIVE) | `upstream/hortator`, packs | GPL-3.0-only | drum machine based on Felucca, unmodified; includes Terminus and UnifrakturMaguntia fonts (OFL-1.1), Grids port (GPL-3.0-or-later), Plaits / Streams ports (MIT), the Felucca Assets under its GPL §7 permission — see its `LICENSING.md` |
 | Browser-emulator HAL design (X0X by charlesvestal, Felucca `web/emu`) | used via upstream `felucca_web.c` | GPL-3.0 | not copied, built from upstream |
 | SLOOP host HAL `fwbuild/hal/sloop/sloop_web.c` | fwbuild | GPL-3.0-only | first written for GGBOX (an earlier port by the same author), adapting Felucca's `felucca_web.c` |
+| Hortator host HAL `fwbuild/hal/hortator/hortator_web.c` | fwbuild | GPL-3.0-only | wraps Hortator's own web simulator core (`tests/sim_core.c`, built from upstream, not copied) |
 | GGBOX MW port (the same author) | ported into `fw/`, `dsp/Resampler.h`, `fwbuild/glue` | contributed under GPL-3.0-only here | MwModuleApi, MwTrackSlot, MwService, glue |
 | DotGothic16 (The DotGothic16 Project Authors) | `app/src/main/res/font/dotgothic16.ttf` (printable-ASCII subset, converted from Felucca `web/emu/fonts`) | OFL-1.1 | panel knob labels, as in the browser emulator; licence text `LICENSES/OFL-DotGothic16.txt` |
 | Ableton Link (Ableton AG) | `third_party/link` (submodule, tag Link-4.1) | GPL-2.0-or-later (used under GPL-3.0) | tempo / beat / start-stop sync over the LAN, docs/LINK.md |

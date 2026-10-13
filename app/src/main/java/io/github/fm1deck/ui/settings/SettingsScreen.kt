@@ -419,7 +419,8 @@ private fun FirmwareSettingsTab(
     val firmwares = listOf(
         Triple("jiant", "JIANT FM", "Synthesis, sequencing, mutation, performance — by juanjiant-bit (fork of Felucca)"),
         Triple("felucca", "Felucca", "The original alternative firmware — by Leo Kuroshita / Hügelton Instruments"),
-        Triple("sloop", "SLOOP", "A live groovebox for any style — by isod89 (based on Felucca)")
+        Triple("sloop", "SLOOP", "A live groovebox for any style — by isod89 (based on Felucca)"),
+        Triple("hortator", "Hortator", "Eight-track drum machine: steps, Grids, ACID bass, PERFORM — by DEADACTIVE (based on Felucca)")
     )
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -492,5 +493,6 @@ private fun AboutTab() {
         Text("• Felucca — Leo Kuroshita / Hügelton Instruments (github.com/hugelton/Felucca)", color = Color.White, fontSize = 12.sp)
         Text("• JIANT FM — juanjiant-bit (github.com/juanjiant-bit/JIANT)", color = Color.White, fontSize = 12.sp)
         Text("• SLOOP — isod89 (github.com/isod89/sloop-fm1)", color = Color.White, fontSize = 12.sp)
+        Text("• Hortator — DEADACTIVE (github.com/DeadActive/hortator)", color = Color.White, fontSize = 12.sp)
     }
 }

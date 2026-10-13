@@ -18,8 +18,8 @@
 ---
 
 **FM1 DECK** puts the community firmwares of the **FM-1** pocket FM synthesizer —
-[Felucca](https://github.com/hugelton/Felucca), [JIANT FM](https://github.com/juanjiant-bit/JIANT) and
-[SLOOP](https://github.com/isod89/sloop-fm1) — on an Android phone, as a real groovebox you play with your fingers.
+[Felucca](https://github.com/hugelton/Felucca), [JIANT FM](https://github.com/juanjiant-bit/JIANT),
+[SLOOP](https://github.com/isod89/sloop-fm1) and [Hortator](https://github.com/DeadActive/hortator) — on an Android phone, as a real groovebox you play with your fingers.
 
 It is not a remake and not an imitation. The authors' own C code runs on the phone, unmodified: the same
 sequencer, the same engines, the same screens, the same button combos. FM1 DECK gives it a body — a touch panel
@@ -60,7 +60,8 @@ So here it is, open source. Play it, fork it, grow it.
 8. **Jam with a friend.** Both phones on the same Wi-Fi → Settings → **MIDI → LINK ON** on both → PLAY on either.
 
 From there, each firmware's own manual opens its world: [Felucca](https://github.com/hugelton/Felucca) ·
-[JIANT FM](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md) · [SLOOP](https://github.com/isod89/sloop-fm1).
+[JIANT FM](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md) · [SLOOP](https://github.com/isod89/sloop-fm1) ·
+[Hortator](https://github.com/DeadActive/hortator).
 
 ## Where is what
 
@@ -82,7 +83,7 @@ From there, each firmware's own manual opens its world: [Felucca](https://github
 | In Settings | What for |
 |---|---|
 | **Skin** | Choose one of six layouts; keyboard height, knob sensitivity, fine mode, glissando, haptics |
-| **Firmware** | Switch between JIANT FM, Felucca and SLOOP (each keeps its own projects) |
+| **Firmware** | Switch between JIANT FM, Felucca, SLOOP and Hortator (each keeps its own projects) |
 | **Audio** | Master-bus quality ×1–×8; stream, latency and CPU — check here if you hear crackles |
 | **Master** | The mastering chain: presets, A/B, bypass, the scope that shows peaks being pressed |
 | **MIDI** | Ableton Link — play in sync with other phones and apps |
@@ -90,14 +91,14 @@ From there, each firmware's own manual opens its world: [Felucca](https://github
 
 The full manual: **[docs/MANUAL.md](docs/MANUAL.md)**.
 
-## Three firmwares, one panel
+## Four firmwares, one panel
 
 <p align="center"><img src="docs/images/firmwares.png" alt="The screens of JIANT FM, Felucca and SLOOP" width="100%"></p>
 
 | | Firmware | Its soul | Author |
 |---|---|---|---|
-| ![](docs/images/firmware-jiant.png) | **JIANT FM** 0.6.41 | A "bio-synthetic operating system": many engines, mutation, songs with ARRANGE and UNDO, made for playing live | [juanjiant-bit](https://github.com/juanjiant-bit/JIANT) |
-| ![](docs/images/firmware-felucca.png) | **Felucca** 1.5.1 | The original alternative firmware: FM voices, a step sequencer with chance and ratchets, MIDI learn, insert effects | [Leo Kuroshita / Hügelton Instruments](https://github.com/hugelton/Felucca) |
+| ![](docs/images/firmware-jiant.png) | **JIANT FM** 0.6.75 | A "bio-synthetic operating system": many engines, mutation, songs with ARRANGE and UNDO, made for playing live | [juanjiant-bit](https://github.com/juanjiant-bit/JIANT) |
+| ![](docs/images/firmware-felucca.png) | **Felucca** 1.6 | The original alternative firmware: FM voices, a step sequencer with chance and ratchets, MIDI learn, insert effects | [Leo Kuroshita / Hügelton Instruments](https://github.com/hugelton/Felucca) |
 | ![](docs/images/firmware-sloop.png) | **SLOOP** 2.6 | A live groovebox for any style: tracks, loops, an arranger, 12 engines | [isod89](https://github.com/isod89/sloop-fm1) |
 
 Switch between them in **Settings → Firmware**. Each keeps its own 1 MB flash — your projects and presets wait for
@@ -156,7 +157,7 @@ bypass, loudness-matched auto-gain, oversampling ×1–×8.
 
 | | |
 |---|---|
-| ![Skin](docs/images/settings-skin.png) **Skin** — layouts as schematics, keyboard height, knob feel, haptics | ![Firmware](docs/images/settings-firmware.png) **Firmware** — Felucca, JIANT FM, SLOOP |
+| ![Skin](docs/images/settings-skin.png) **Skin** — layouts as schematics, keyboard height, knob feel, haptics | ![Firmware](docs/images/settings-firmware.png) **Firmware** — Felucca, JIANT FM, SLOOP, Hortator |
 | ![Audio](docs/images/settings-audio.png) **Audio** — quality, stream, latency, CPU budget | ![About](docs/images/settings-about.png) **About** — versions, credits, licences |
 
 Open Settings with the small dot in the top-left corner of the panel (it turns green while Link is on).
@@ -208,8 +209,8 @@ app/                     Android app: Kotlin + Jetpack Compose UI, C++17 engine
   src/main/cpp/dsp/      master bus
   src/main/cpp/engine/   Oboe engine, Ableton Link → MIDI clock
   src/main/assets/skins/ six layouts, palettes
-fwbuild/                 builds each firmware into libfw_<id>.so (glue, profiles, SLOOP's host HAL)
-upstream/                Felucca, JIANT, SLOOP — submodules, never edited
+fwbuild/                 builds each firmware into libfw_<id>.so (glue, profiles, SLOOP's and Hortator's host HALs)
+upstream/                Felucca, JIANT, SLOOP, Hortator — submodules, never edited
 third_party/link/        Ableton Link
 native-tests/            C++ tests (DSP, clock, firmware slot)
 docs/                    manual, how it works, design docs, screenshots
@@ -218,7 +219,7 @@ docs/                    manual, how it works, design docs, screenshots
 
 ## Roadmap
 
-- [x] Felucca, JIANT FM, SLOOP on the phone, switchable, each with its own flash
+- [x] Felucca, JIANT FM, SLOOP, Hortator on the phone, switchable, each with its own flash
 - [x] The full panel, six layouts, note names, F latch
 - [x] Master bus with scope, presets, A/B
 - [x] Ableton Link: tempo, phase, start/stop
@@ -236,6 +237,7 @@ them, go star their repositories and support them:
 - **Felucca** — Leo Kuroshita (@kurogedelic), Hügelton Instruments · [hugelton/Felucca](https://github.com/hugelton/Felucca)
 - **JIANT FM** — juanjiant-bit · [juanjiant-bit/JIANT](https://github.com/juanjiant-bit/JIANT) · [Ko-fi](https://ko-fi.com/juanjiant)
 - **SLOOP** — isod89 · [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1)
+- **Hortator** — DEADACTIVE · [DeadActive/hortator](https://github.com/DeadActive/hortator) · [play it in the browser](https://deadactive.github.io/hortator/)
 - **Ableton Link** — Ableton AG · **Oboe** — Google · **DotGothic16** font — The DotGothic16 Project Authors
 
 All third-party components and their licences: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

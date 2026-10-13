@@ -3,17 +3,17 @@
 What FM1 DECK is built on and why that shapes its architecture. Every conclusion was checked against the code;
 references point to files in `upstream/<id>/` (fresh clones from GitHub).
 
-## 1. Three firmwares
+## 1. Four firmwares
 
-| | Felucca | JIANT FM | SLOOP |
-|---|---|---|---|
-| Repository | [hugelton/Felucca](https://github.com/hugelton/Felucca) | [juanjiant-bit/JIANT](https://github.com/juanjiant-bit/JIANT) | [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1) |
-| Author | Leo Kuroshita (Hügelton Instruments) | juanjiant-bit (a fork of Felucca 1.1.5.1 + SLOOP's song mode) | isod89 (based on Felucca) |
-| Version / commit | v1.5.1, `ef1f561` (2026-10-11) | **v0.6.41**, `3372327` (2026-10-12) | SLOOP 2.6, `8fad1a1` (2026-10-11) |
-| Update pace | every few days | **several versions a day** (0.6.11 → 0.6.41 in one day) | the firmware is stable, the web editor changes |
-| Browser emulator | yes (`web/emu/felucca_web.c`) | yes (the same HAL), published by CI on GitHub Pages | **no** (only `sloop-preview.wasm` — sound for the web editor) |
-| Licence | GPL-3.0-only | GPL-3.0-only | GPL-3.0-only |
-| Cheat sheet | README "Controls", `docs/controls.jpg` | `tools/gen_cheatsheets.py` (**data in Python literals**) | `GUIDE.md` §5, §9, §16 |
+| | Felucca | JIANT FM | SLOOP | Hortator |
+|---|---|---|---|---|
+| Repository | [hugelton/Felucca](https://github.com/hugelton/Felucca) | [juanjiant-bit/JIANT](https://github.com/juanjiant-bit/JIANT) | [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1) | [DeadActive/hortator](https://github.com/DeadActive/hortator) |
+| Author | Leo Kuroshita (Hügelton Instruments) | juanjiant-bit (a fork of Felucca 1.1.5.1 + SLOOP's song mode) | isod89 (based on Felucca) | DEADACTIVE (a drum machine based on Felucca) |
+| Version / commit | v1.6, `1727537` (2026-10-13) | **v0.6.75**, `ab87ea3` (2026-10-13) | SLOOP 2.6, `8fad1a1` (2026-10-11) | DRUM-0.16.0, `7e34159` (2026-10-12) |
+| Update pace | every few days | **several versions a day** (0.6.11 → 0.6.41 in one day) | the firmware is stable, the web editor changes | a release every few days |
+| Browser emulator | yes (`web/emu/felucca_web.c`) | yes (the same HAL), published by CI on GitHub Pages | **no** (only `sloop-preview.wasm` — sound for the web editor) | its own simulator (`tests/sim_core.c`, `sim_*` API, not `web_*`): `fwbuild/hal/hortator/hortator_web.c` wraps it |
+| Licence | GPL-3.0-only | GPL-3.0-only | GPL-3.0-only | GPL-3.0-only |
+| Cheat sheet | README "Controls", `docs/controls.jpg` | `tools/gen_cheatsheets.py` (**data in Python literals**) | `GUIDE.md` §5, §9, §16 | README "On the panel" |
 
 Conclusion: JIANT updates so often that easy updating is not an option but the core of the product. An update must
 be built automatically (CI) and installed on the phone in one action.
@@ -65,12 +65,13 @@ clippers, the true-peak detector) run oversampled ×1/×2/×4/×8. That gives we
 
 ## 4. The firmware's UI state is reachable
 
-The same translation unit exposes (Felucca 1.5.1 / JIANT 0.6.41 / SLOOP 2.6):
+The same translation unit exposes (Felucca 1.6 / JIANT 0.6.75 / SLOOP 2.6 / Hortator 0.16.0):
 
 - `ui.page` — an index into `PAGES[]`, `PAGES[i].title` ("DLY 2"), `page_desc(pg, k, &val)` → `param_desc_t
   {label, min, max, ...}` and a pointer to the current value;
 - `ui.layer` — the open "layer map" (`LAYER_NONE/FX/GLO/SCL/EDIT/SEQ/REC` in Felucca, + `SAVE/MACRO` in JIANT;
-  SLOOP has `LY_PLAY/FX/ERASE/ROLL/STEP/SCALE/MIX/SONG`), `ui.home`.
+  SLOOP has `LY_PLAY/FX/ERASE/ROLL/STEP/SCALE/MIX/SONG`; Hortator has no layers, only `ui.layer` = PERFORM shown),
+  `ui.home` (Hortator's HOME knobs: `home_param()`).
 
 So the labels of the four knobs and the current layer can come **straight from the firmware** (the
 `FM1_CAP_UI_STATE` capability): hints update together with the firmware, and a value ring can be drawn around the

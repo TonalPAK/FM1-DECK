@@ -85,7 +85,7 @@ app/src/main/cpp/
   fw/         Fm1FirmwareApi.h (the contract), IFirmware.h, NativeFirmware, FirmwareHost, FirmwareSlot
   dsp/        Resampler, Oversampler, Crossover, Shaper, Meters, MasterBusParams.h (contract), master/* stages
 fwbuild/      firmware modules (C, GPL)       tools/   fwgen, overlay, render, icon
-upstream/     felucca, jiant, sloop (submodules, read-only)
+upstream/     felucca, jiant, sloop, hortator (submodules, read-only)
 ```
 
 Planned modules: `fw/pack/*` (packages, P3), `ui/hints/*` (P4), `engine/Affinity` (P5), `fw/WasmFirmware` (P7),

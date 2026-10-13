@@ -13,3 +13,7 @@
 [submodule "third_party/link"]
 	path = third_party/link
 	url = https://github.com/Ableton/link.git
+[submodule "upstream/hortator"]
+	path = upstream/hortator
+	url = https://github.com/DeadActive/hortator.git
+	shallow = true

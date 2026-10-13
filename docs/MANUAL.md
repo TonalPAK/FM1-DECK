@@ -6,6 +6,7 @@ layouts and the settings. What each firmware does with its buttons, keys and pag
 - **Felucca** — [github.com/hugelton/Felucca](https://github.com/hugelton/Felucca)
 - **JIANT FM** — [docs/MANUAL.md](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md) and its cheat sheets
 - **SLOOP** — [github.com/isod89/sloop-fm1](https://github.com/isod89/sloop-fm1)
+- **Hortator** — [github.com/DeadActive/hortator](https://github.com/DeadActive/hortator)
 
 Everything those manuals say about the hardware's panel applies here: the app's panel is the same panel.
 
@@ -40,7 +41,7 @@ Everything those manuals say about the hardware's panel applies here: the app's 
 
 ![Firmware](images/settings-firmware.png)
 
-Pick Felucca, JIANT FM or SLOOP. Each has its own flash memory (projects, presets, settings), saved when you switch
+Pick Felucca, JIANT FM, SLOOP or Hortator. Each has its own flash memory (projects, presets, settings), saved when you switch
 and restored when you come back. *Planned:* installing newer firmware versions from a file, backups.
 
 ## 4. Settings → Audio

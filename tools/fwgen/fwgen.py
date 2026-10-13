@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 # FM1 DECK — tools/fwgen/fwgen.py
-# Generates firmware headers (fonts, icons, tables, samples) for Felucca, JIANT, SLOOP
+# Generates firmware headers (fonts, icons, tables, samples) for Felucca, JIANT, SLOOP, Hortator
 # without touching upstream submodules.
 
 import argparse
@@ -14,7 +14,25 @@ import sys
 import tarfile
 from pathlib import Path
 
-VALID_FIRMWARES = ("felucca", "jiant", "sloop")
+VALID_FIRMWARES = ("felucca", "jiant", "sloop", "hortator")
+
+
+def hortator_keymap(src_dir: Path, gen_dir: Path) -> None:
+    """tests/sim_host.h includes sim_keymap.h: FM1_KEYMAP cut out of firmware/hal/fm1_input.h, as the upstream's
+    tools/build_sim.sh does it with awk."""
+    lines, out = (src_dir / "firmware" / "hal" / "fm1_input.h").read_text(encoding="utf-8").splitlines(), []
+    for line in lines:
+        if out or "static const int8_t FM1_KEYMAP" in line:
+            out.append(line)
+            if line.startswith("};"):
+                break
+    if not out or not out[-1].startswith("};"):
+        raise SystemExit("[fwgen] FM1_KEYMAP not found in firmware/hal/fm1_input.h")
+    (src_dir / "build" / "gen" / "sim_keymap.h").write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+# headers a firmware's own build makes outside generate()
+EXTRA_GEN = {"hortator": hortator_keymap}
 
 
 def repo_root() -> Path:
@@ -70,6 +88,8 @@ def generate_firmware(fw_id: str, root: Path) -> None:
         raise SystemExit(f"[fwgen] Generator failed for {fw_id} with exit code {proc.returncode}")
 
     src_gen_dir = src_dir / "build" / "gen"
+    if fw_id in EXTRA_GEN and src_gen_dir.exists():
+        EXTRA_GEN[fw_id](src_dir, gen_dir)
     if not src_gen_dir.exists():
         raise SystemExit(f"[fwgen] Expected generated directory not found: {src_gen_dir}")
 
@@ -94,7 +114,7 @@ def generate_firmware(fw_id: str, root: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="FM1 DECK firmware header generator")
-    parser.add_argument("target", help="Firmware ID (felucca, jiant, sloop) or 'all'")
+    parser.add_argument("target", help="Firmware ID (felucca, jiant, sloop, hortator) or 'all'")
     parser.add_argument("--wsl", action="store_true", help="Run via WSL Ubuntu and ~/mwgen-venv")
     args = parser.parse_args()
 

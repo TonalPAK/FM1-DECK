@@ -14,7 +14,7 @@ NDK into a native module, so the phone runs the authors' code unmodified.
 
 | Layer | Where | What |
 |---|---|---|
-| Firmware module | `fwbuild/` → `libfw_<id>.so` | HAL + firmware sources + `glue/fm1deck_glue.h`, which exposes the C table `Fm1FirmwareApi` (ABI 1): `boot`, `render`, `buttons`, `keys`, `enc`, `master`, `midi`, `host_clock`, `screen`, `leds`, `nor`, `save_now`… SLOOP has no browser HAL, so `fwbuild/hal/sloop/sloop_web.c` provides one. |
+| Firmware module | `fwbuild/` → `libfw_<id>.so` | HAL + firmware sources + `glue/fm1deck_glue.h`, which exposes the C table `Fm1FirmwareApi` (ABI 1): `boot`, `render`, `buttons`, `keys`, `enc`, `master`, `midi`, `host_clock`, `screen`, `leds`, `nor`, `save_now`… SLOOP has no browser HAL, so `fwbuild/hal/sloop/sloop_web.c` provides one; Hortator's simulator has its own API, so `fwbuild/hal/hortator/hortator_web.c` wraps it. |
 | Firmware host | `app/src/main/cpp/fw/` | `FirmwareSlot` drives one module from the audio thread in 64-frame sub-blocks: inputs in order with the hardware's 24 ms debounce gating, lock-free queues, LED atomics, a triple-buffered screen, park/unpark for switching firmware. |
 | Audio engine | `app/src/main/cpp/engine/` | Oboe (AAudio), float, exclusive low-latency when available. The firmware renders 44.1 kHz; a band-limited resampler converts to the stream rate. |
 | Master bus | `app/src/main/cpp/dsp/` | Saturation → spectral clipper → look-ahead true-peak limiter → final clipper, own half-band FIR oversampling ×1–×8, residual ADAA, LUFS / true-peak meters. Parameters arrive through an SPSC queue; nothing allocates or locks in the callback. |
