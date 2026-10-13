@@ -55,6 +55,8 @@ sealed interface PanelTarget {
     data class Key(val bit: Int) : PanelTarget
     object Screen : PanelTarget
     object Gear : PanelTarget
+    /** The rack's tab in the top-right corner: opens the slot drawer. */
+    object RackTab : PanelTarget
     /** The app's F (latch) button: not a firmware button. */
     object Fn : PanelTarget
 }
@@ -141,7 +143,9 @@ data class PanelGeometry(
     val octTray: Rect = Rect(0f, 0f, 0f, 0f),
     /** The mini F (latch) button left of MASTER's label; its hit target is a little larger. */
     val fnRect: Rect = Rect(0f, 0f, 0f, 0f),
-    val fnHitRect: Rect = Rect(0f, 0f, 0f, 0f)
+    val fnHitRect: Rect = Rect(0f, 0f, 0f, 0f),
+    /** The rack's tab: a corner square at the top right, the settings target's mirror, clear of every control. */
+    val rackTab: Rect = Rect(0f, 0f, 0f, 0f)
 ) {
     private val buttonsByIndex = buttons.associateBy { it.index }
     private val knobsByRole = knobs.associateBy { it.role }
@@ -156,6 +160,7 @@ data class PanelGeometry(
      */
     fun hitTest(x: Float, y: Float): PanelTarget? {
         if (gear.hitRect.contains(x, y)) return PanelTarget.Gear
+        if (rackTab.contains(x, y)) return PanelTarget.RackTab
         if (fnHitRect.contains(x, y)) return PanelTarget.Fn
 
         // Fast path: keyboard area
@@ -462,7 +467,11 @@ object SkinLayout {
             separators = separatorsList,
             octTray = octTray,
             fnRect = fnRect,
-            fnHitRect = fnHitRect
+            fnHitRect = fnHitRect,
+            rackTab = fitGearTarget(
+                0f, safeTop, density, knobsList, masterPot, buttonsList, screenElement.lcdRect, keyboardRect, fnRect,
+                right = widthPx
+            )
         )
     }
 
@@ -618,7 +627,11 @@ object SkinLayout {
             separators = emptyList(),
             octTray = octTray,
             fnRect = fnRect,
-            fnHitRect = fnHitRect
+            fnHitRect = fnHitRect,
+            rackTab = fitGearTarget(
+                left, safeTop, density, knobsList, masterPot, buttonsList, screenElement.lcdRect, keyboardRect, fnRect,
+                right = right
+            )
         )
     }
 
@@ -800,7 +813,8 @@ object SkinLayout {
     const val GEAR_MIN_DP = 28f
 
     /**
-     * The largest corner square from 40 dp down to [GEAR_MIN_DP] that covers no knob well, button face, LCD or key.
+     * The largest corner square from 40 dp down to [GEAR_MIN_DP] that covers no knob well, button face, LCD or key:
+     * in the top-left corner at [left], or in the top-right one when [right] is given.
      */
     private fun fitGearTarget(
         left: Float,
@@ -811,7 +825,8 @@ object SkinLayout {
         buttons: List<PanelElement.Button>,
         lcd: Rect,
         keybed: Rect,
-        fn: Rect
+        fn: Rect,
+        right: Float? = null
     ): Rect {
         fun circleHits(r: Rect, cx: Float, cy: Float, radius: Float): Boolean {
             val nx = cx.coerceIn(r.left, r.right)
@@ -821,7 +836,7 @@ object SkinLayout {
         var dp = 40f
         while (true) {
             val size = dp * density
-            val r = Rect(left, top, left + size, top + size)
+            val r = if (right != null) Rect(right - size, top, right, top + size) else Rect(left, top, left + size, top + size)
             val clear = knobs.none { circleHits(r, it.knobCenter.x, it.knobCenter.y, it.knobRadius) } &&
                 !circleHits(r, master.knobCenter.x, master.knobCenter.y, master.knobRadius) &&
                 buttons.none { r.intersects(it.rect) } &&

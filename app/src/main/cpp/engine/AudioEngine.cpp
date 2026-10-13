@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
@@ -19,7 +21,25 @@
 
 namespace fm1deck {
 
-AudioEngine::AudioEngine() : host_(&slot_) {}
+static_assert(AudioEngine::kSlots <= LinkSync::kLanes, "every rack slot needs its own Link lane");
+
+AudioEngine::AudioEngine() {
+    slotGain_.fill(1.0f);
+    for (int i = 0; i < kSlots; ++i) {
+        hosts_[static_cast<size_t>(i)] = std::make_unique<FirmwareHost>(&slots_[static_cast<size_t>(i)]);
+        lanes_[static_cast<size_t>(i)] = LinkLane{&link_, i};
+    }
+}
+
+void AudioEngine::setFocus(int i) {
+    if (!validSlot(i)) return;
+    std::lock_guard<std::mutex> lock(focusMutex_);
+    const int old = focus_.load(std::memory_order_acquire);
+    if (old == i) return;
+    // Nothing stays pressed on the slot the panel leaves (a held key would drone on there)
+    slots_[static_cast<size_t>(old)].pushPanel(0u, 0u);
+    focus_.store(i, std::memory_order_release);
+}
 
 AudioEngine::~AudioEngine() {
     stop();
@@ -140,7 +160,11 @@ void AudioEngine::updateOutputLatency() {
 #endif
     if (ms < 0.0) return;
     const double busMs = 1000.0 * bus_.latency() / rate;
-    link_.setOutputLatencyUs(static_cast<int64_t>((ms + busMs) * 1000.0));
+    // The stream's estimate wanders by a few ms from reading to reading (a shared stream most): follow it slowly,
+    // so the heard time the firmwares' clock comes from does not twitch; a real change (> 20 ms) is taken at once
+    const int64_t want = static_cast<int64_t>((ms + busMs) * 1000.0);
+    const int64_t cur = link_.outputLatencyUs();
+    link_.setOutputLatencyUs(cur == 0 || std::llabs(want - cur) > 20000 ? want : cur + (want - cur) / 8);
 }
 
 StreamInfo AudioEngine::streamInfo() const {
@@ -176,31 +200,75 @@ oboe::DataCallbackResult AudioEngine::onAudioReady(oboe::AudioStream* stream, vo
     float* out = static_cast<float*>(audioData);
     const int sampleRate = stream->getSampleRate();
 
-    // Process in sub-blocks into scratch buffers, then interleave
+    // Every slot renders its sub-blocks into its own scratch; the sum goes through the master bus, then interleaved
     constexpr int kMaxScratch = 512;
     std::array<float, kMaxScratch> scratchL;
     std::array<float, kMaxScratch> scratchR;
+    std::array<float, kMaxScratch> mixL;
+    std::array<float, kMaxScratch> mixR;
 
-    // Link: the clock bytes go to the firmware sub-block by sub-block, timed as heard (docs/LINK.md)
-    link_.beginBuffer(sampleRate);
+    // Link: the clock bytes go to each firmware sub-block by sub-block, timed as heard (docs/LINK.md)
+    link_.beginBuffer(sampleRate, numFrames);
     auto linkHook = [](void* ctx, IFirmware* fw, int offset, int n) {
-        static_cast<LinkSync*>(ctx)->beforeSubBlock(fw, offset, n);
+        auto* lane = static_cast<LinkLane*>(ctx);
+        lane->link->beforeSubBlock(lane->lane, fw, offset, n);
     };
+
+    const uint32_t mute = muteMask_.load(std::memory_order_relaxed);
+    const uint32_t solo = soloMask_.load(std::memory_order_relaxed);
+    const float glide = 1.0f / (0.010f * static_cast<float>(sampleRate > 0 ? sampleRate : 48000));
 
     int framesRemaining = numFrames;
     while (framesRemaining > 0) {
         const int chunk = std::min(kMaxScratch, framesRemaining);
-        slot_.process(chunk, scratchL.data(), scratchR.data(), sampleRate, linkHook, &link_, numFrames - framesRemaining);
+        std::fill_n(mixL.data(), chunk, 0.0f);
+        std::fill_n(mixR.data(), chunk, 0.0f);
+        for (int s = 0; s < kSlots; ++s) {
+            auto& slot = slots_[static_cast<size_t>(s)];
+            if (!slot.firmware()) continue;  // an empty slot costs nothing
+            const auto ts = std::chrono::steady_clock::now();
+            slot.process(chunk, scratchL.data(), scratchR.data(), sampleRate, linkHook, &lanes_[static_cast<size_t>(s)],
+                         numFrames - framesRemaining);
+            const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - ts).count();
+            // The meter shows the slot's own sound, heard or not (a muted slot still shows it plays)
+            const bool heard = !((mute >> s) & 1u) && (solo == 0u || ((solo >> s) & 1u));
+            const float target = heard ? 1.0f : 0.0f;
+            float g = slotGain_[static_cast<size_t>(s)];
+            float peak = 0.0f;
+            for (int i = 0; i < chunk; ++i) {
+                if (g != target) g = g < target ? std::min(target, g + glide) : std::max(target, g - glide);
+                const float l = scratchL[static_cast<size_t>(i)];
+                const float r = scratchR[static_cast<size_t>(i)];
+                mixL[static_cast<size_t>(i)] += g * l;
+                mixR[static_cast<size_t>(i)] += g * r;
+                peak = std::max(peak, std::max(std::fabs(l), std::fabs(r)));
+            }
+            slotGain_[static_cast<size_t>(s)] = g;
+            auto& load = slotLoad_[static_cast<size_t>(s)];
+            load += 0.008f * (static_cast<float>(ns * 1e-9 * sampleRate / chunk) - load);
+            auto& level = slotLevel_[static_cast<size_t>(s)];
+            level = std::max(peak, level * 0.94f);
+            meters_[static_cast<size_t>(s)].load.store(load, std::memory_order_relaxed);
+            meters_[static_cast<size_t>(s)].level.store(level, std::memory_order_relaxed);
+        }
+        for (int s = 0; s < kSlots; ++s) {
+            if (slots_[static_cast<size_t>(s)].firmware()) continue;
+            slotLoad_[static_cast<size_t>(s)] = 0.0f;
+            slotLevel_[static_cast<size_t>(s)] = 0.0f;
+            meters_[static_cast<size_t>(s)].load.store(0.0f, std::memory_order_relaxed);
+            meters_[static_cast<size_t>(s)].level.store(0.0f, std::memory_order_relaxed);
+        }
+
         const auto t0 = std::chrono::steady_clock::now();
-        bus_.process(scratchL.data(), scratchR.data(), chunk);
+        bus_.process(mixL.data(), mixR.data(), chunk);
         const auto busNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
         const float ratio = static_cast<float>(busNs * 1e-9 * sampleRate / chunk);
         busLoad_ += 0.05f * (ratio - busLoad_);
         bus_.setLoad(busLoad_);
 
         for (int i = 0; i < chunk; ++i) {
-            *out++ = scratchL[static_cast<size_t>(i)];
-            *out++ = scratchR[static_cast<size_t>(i)];
+            *out++ = mixL[static_cast<size_t>(i)];
+            *out++ = mixR[static_cast<size_t>(i)];
         }
         framesRemaining -= chunk;
     }

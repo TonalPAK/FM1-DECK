@@ -58,6 +58,17 @@ class PanelState {
     // Current firmware UI state (layer, page, knob labels)
     var fwUiState by mutableStateOf<FwUiState?>(null)
 
+    // The rack (AudioEngine): the callback's live load and recent peak (shares of the budget), per slot the load
+    // and the output peak, all from nativeRackStatus
+    var dspLoad by mutableFloatStateOf(0f)
+    var dspPeak by mutableFloatStateOf(0f)
+    var slotLoads by mutableStateOf(FloatArray(0))
+    var slotLevels by mutableStateOf(FloatArray(0))
+
+    /** Set when the panel moves to another rack slot: the next poll takes that slot's screen whatever its frame. */
+    @Volatile
+    var screenResync = false
+
     // Button label overrides from firmware (e.g. SLOOP has SEL instead of SCL)
     var buttonNames by mutableStateOf(SkinLayout.ROW0_BUTTON_LABELS + SkinLayout.ROW1_BUTTON_LABELS)
 

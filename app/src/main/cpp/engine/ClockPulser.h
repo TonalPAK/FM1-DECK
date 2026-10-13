@@ -35,7 +35,9 @@ public:
             last_ = k;
             have_ = true;
         }
-        if (k < last_ || k - last_ > kMaxBurst) last_ = k - 1;  // the timeline jumped: one pulse, then on time
+        // The timeline jumped: one pulse, then on time. A small step back (the output latency's estimate moved by a
+        // few ms) is waited out: sending that pulse again would make the clock run fast
+        if (k < last_ - kMaxBurst || k - last_ > kMaxBurst) last_ = k - 1;
 
         if (!playing && running_) {
             emit(kStop);
@@ -50,7 +52,7 @@ public:
             running_ = true;
         }
         for (int64_t p = last_ + 1; p <= k; ++p) emit(kClock);
-        last_ = k;
+        if (k > last_) last_ = k;  // (a step back keeps the count: those pulses are out)
     }
 
 private:

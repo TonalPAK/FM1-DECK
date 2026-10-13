@@ -95,11 +95,29 @@ static void testJumpsMakeNoBurst() {
     std::cout << "[clock] timeline jumps give one pulse, no burst" << std::endl;
 }
 
+static void testSmallStepBackIsWaitedOut() {
+    // The heard time moves back a few ms now and then (the latency estimate): no pulse is sent twice
+    ClockPulser p;
+    int pulses = 0;
+    auto emit = [&](uint32_t s) { if (s == ClockPulser::kClock) ++pulses; };
+    const double perBlock = 64.0 / 48000.0 * 2.0;  // 120 BPM, 64-frame blocks
+    double b = 0.0;
+    for (int i = 0; i < 3000; ++i) {
+        const double jitter = (i % 50 == 25) ? -0.02 : 0.0;  // 10 ms back every 50 blocks
+        p.step(b + jitter, b + jitter + perBlock, false, emit);
+        b += perBlock;
+    }
+    const int expected = static_cast<int>(b * ClockPulser::kPpqn);
+    CHECK(pulses >= expected - 2 && pulses <= expected + 1);
+    std::cout << "[clock] a small step back sends no pulse twice (" << pulses << " of " << expected << ")" << std::endl;
+}
+
 int main() {
     testSteadyPulses();
     testStartOnBeatZero();
     testStop();
     testJumpsMakeNoBurst();
+    testSmallStepBackIsWaitedOut();
     std::cout << "[test_clock_pulser] ALL PASSED" << std::endl;
     return 0;
 }

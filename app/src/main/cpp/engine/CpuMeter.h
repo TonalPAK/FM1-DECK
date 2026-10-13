@@ -66,9 +66,20 @@ public:
         updateMax(maxUs_, durationUs);
         updateMax(maxRatio_, ratio);
 
+        // The live reading (the DSP meter): a calm load (about a quarter second at a 2 ms burst) and a peak that
+        // falls back over a second or two
+        nowLoad_ += 0.008f * (ratio - nowLoad_);
+        nowPeak_ = std::max(ratio, nowPeak_ * 0.9985f);
+        liveLoad_.store(nowLoad_, std::memory_order_relaxed);
+        livePeak_.store(nowPeak_, std::memory_order_relaxed);
+
         lastFrames_.store(numFrames, std::memory_order_relaxed);
         lastSampleRate_.store(sampleRate, std::memory_order_relaxed);
     }
+
+    /** Control thread: the live load (smoothed) and its recent peak, as shares of the callback budget. */
+    float liveLoad() const noexcept { return liveLoad_.load(std::memory_order_relaxed); }
+    float livePeak() const noexcept { return livePeak_.load(std::memory_order_relaxed); }
 
     // Control thread: compute stats over the whole run
     Metrics computeMetrics() const noexcept {
@@ -119,6 +130,10 @@ private:
     }
 
     std::chrono::steady_clock::time_point startTime_{};
+    float nowLoad_ = 0.0f;  // audio thread only
+    float nowPeak_ = 0.0f;
+    std::atomic<float> liveLoad_{0.0f};
+    std::atomic<float> livePeak_{0.0f};
     std::array<std::atomic<uint32_t>, kBuckets> histogram_{};
     std::atomic<uint64_t> totalCallbacks_{0};
     std::atomic<float> maxUs_{0.0f};

@@ -49,8 +49,23 @@ object SettingsStore {
             },
             masterScope = root.optBoolean("masterScope", true),
             linkQuantum = root.optInt("linkQuantum", 4).let { q -> if (q in listOf(1, 2, 4, 8)) q else 4 }
-        )
+        ).let { s ->
+            // Before the rack: the one firmware and its MASTER become slot 1
+            val rack = root.optJSONArray("rack")?.let { a -> List(a.length()) { a.optString(it, "") } }
+                ?: listOf(s.activeFwId)
+            val masters = root.optJSONArray("rackMasters")?.let { a -> List(a.length()) { a.optInt(it, AppSettings.DEFAULT_MASTER_ADC) } }
+                ?: listOf(s.masterAdc)
+            s.copy(
+                rack = rack, rackMasters = masters, rackFocus = root.optInt("rackFocus", 0),
+                rackTempo = root.optDouble("rackTempo", 120.0).coerceIn(20.0, 999.0),
+                rackMute = root.optInt("rackMute", 0),
+                rackSolo = root.optInt("rackSolo", 0)
+            ).normalized(known)
+        }
     }
+
+    /** Firmware ids the rack accepts. */
+    private val known: (String) -> Boolean = { io.github.fm1deck.fw.FirmwareCatalog.findById(it) != null }
 
     fun toJson(settings: AppSettings): String {
         val root = JSONObject()
@@ -73,6 +88,14 @@ object SettingsStore {
         root.put("quality", settings.quality)
         root.put("masterScope", settings.masterScope)
         root.put("linkQuantum", settings.linkQuantum)
+        root.put("rack", org.json.JSONArray(settings.rack))
+        // masterAdc is the focused slot's MASTER (the panel writes it)
+        val masters = settings.rackMasters.toMutableList().also { if (settings.rackFocus in it.indices) it[settings.rackFocus] = settings.masterAdc }
+        root.put("rackMasters", org.json.JSONArray(masters))
+        root.put("rackFocus", settings.rackFocus)
+        root.put("rackTempo", settings.rackTempo)
+        root.put("rackMute", settings.rackMute)
+        root.put("rackSolo", settings.rackSolo)
         return root.toString(2)
     }
 

@@ -26,9 +26,54 @@ data class AppSettings(
     /** Settings → Master: the animated signal scope (can be switched off). */
     val masterScope: Boolean = true,
     /** Ableton Link: a shared start lands on a multiple of this many beats (1 / 2 / 4 / 8). Link itself starts off. */
-    val linkQuantum: Int = 4
+    val linkQuantum: Int = 4,
+    /**
+     * The rack: the firmware in each of [RACK_SLOTS] slots ("" = empty), all playing at once into the master bus.
+     * [activeFwId] and [masterAdc] are the focused slot's (the one the panel plays), kept in step by [normalized].
+     */
+    val rack: List<String> = listOf(DEFAULT_FW_ID) + List(RACK_SLOTS - 1) { "" },
+    /** Each slot's own MASTER pot (the firmware's volume), 0..1023. */
+    val rackMasters: List<Int> = List(RACK_SLOTS) { DEFAULT_MASTER_ADC },
+    val rackFocus: Int = 0,
+    /** Mute and solo, a bit per slot. */
+    val rackMute: Int = 0,
+    val rackSolo: Int = 0,
+    /** The rack's shared tempo (its clock runs while two or more slots are filled), BPM. */
+    val rackTempo: Double = 120.0
 ) {
+    /** The rack made whole: [RACK_SLOTS] slots, known firmwares once each, focus on a filled slot, mirrors set. */
+    fun normalized(known: (String) -> Boolean = { true }): AppSettings {
+        val seen = HashSet<String>()
+        val slots = List(RACK_SLOTS) { i ->
+            rack.getOrElse(i) { "" }.takeIf { it.isNotEmpty() && known(it) && seen.add(it) } ?: ""
+        }.toMutableList()
+        if (slots.all { it.isEmpty() }) slots[0] = activeFwId.takeIf(known) ?: DEFAULT_FW_ID
+        val masters = List(RACK_SLOTS) { i -> rackMasters.getOrElse(i) { DEFAULT_MASTER_ADC }.coerceIn(0, 1023) }
+        val focus = rackFocus.takeIf { it in slots.indices && slots[it].isNotEmpty() } ?: slots.indexOfFirst { it.isNotEmpty() }
+        return copy(rack = slots, rackMasters = masters, rackFocus = focus, activeFwId = slots[focus], masterAdc = masters[focus])
+    }
+
+    /** Focus on [slot] (a filled one). */
+    fun withFocus(slot: Int): AppSettings = copy(rackFocus = slot).normalized()
+
+    /** [fwId] into [slot] ("" empties it); a firmware already in another slot moves here. */
+    fun withSlot(slot: Int, fwId: String): AppSettings {
+        val slots = rack.toMutableList()
+        if (fwId.isNotEmpty()) for (i in slots.indices) if (slots[i] == fwId) slots[i] = ""
+        if (slot in slots.indices) slots[slot] = fwId
+        // A new firmware in a slot starts heard
+        val clear = (1 shl slot).inv()
+        return copy(rack = slots, rackMute = rackMute and clear, rackSolo = rackSolo and clear).normalized()
+    }
+
+    /** The focused slot's MASTER pot. */
+    fun withFocusMaster(adc: Int): AppSettings =
+        copy(rackMasters = rackMasters.toMutableList().also { if (rackFocus in it.indices) it[rackFocus] = adc })
+            .normalized()
+
     companion object {
+        /** Slots the rack offers (the native engine has room for AudioEngine::kSlots). */
+        const val RACK_SLOTS = 3
         const val CURRENT_SCHEMA = 1
         const val DEFAULT_SKIN_ID = "classic"
         const val DEFAULT_PALETTE_ID = "graphite"

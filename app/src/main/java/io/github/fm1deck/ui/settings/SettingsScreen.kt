@@ -512,11 +512,17 @@ private fun FirmwareSettingsTab(
     )
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Text("ACTIVE FIRMWARE", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("FIRMWARE IN SLOT ${settings.rackFocus + 1}", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "The rack plays up to ${AppSettings.RACK_SLOTS} firmwares at once; the tab at the panel's top right switches between them.",
+            color = Color(0xFF666666), fontSize = 11.sp
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
         firmwares.forEach { (id, name, desc) ->
             val isSelected = id == settings.activeFwId
+            val otherSlot = settings.rack.indexOf(id).takeIf { it >= 0 && it != settings.rackFocus }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -527,7 +533,8 @@ private fun FirmwareSettingsTab(
                         color = if (isSelected) Color(0xFF6FA8DC) else Color(0xFF2C2C2C),
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .clickable { onSettingsChanged(settings.copy(activeFwId = id)) }
+                    // In another slot already: go there; else it takes the focused slot's place
+                    .clickable { onSettingsChanged(if (otherSlot != null) settings.withFocus(otherSlot) else settings.withSlot(settings.rackFocus, id)) }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -538,6 +545,8 @@ private fun FirmwareSettingsTab(
                 }
                 if (isSelected) {
                     Text("ACTIVE", color = Color(0xFF6FA8DC), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                } else if (otherSlot != null) {
+                    Text("SLOT ${otherSlot + 1}", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))

@@ -1,5 +1,6 @@
 package io.github.fm1deck.engine
 
+import io.github.fm1deck.fw.FirmwareCatalog
 import io.github.fm1deck.fw.flash.FlashStore
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -77,83 +78,58 @@ object AudioController {
         }
     }
 
-    private val activeCaps = java.util.concurrent.atomic.AtomicInteger(0)
-    private val isFwLoaded = java.util.concurrent.atomic.AtomicBoolean(false)
+    /** Native rack slots (AudioEngine::kSlots); the settings use the first [io.github.fm1deck.settings.AppSettings.RACK_SLOTS]. */
+    val nativeSlots: Int by lazy { NativeBridge.nativeRackSlots() }
 
-    fun getActiveCaps(): Int = activeCaps.get()
-    fun isLoaded(): Boolean = isFwLoaded.get()
-
-    private fun updateFwState() {
-        val loaded = NativeBridge.nativeFwLoaded()
-        isFwLoaded.set(loaded)
-        if (loaded) {
-            activeCaps.set(NativeBridge.nativeFwCaps())
-        } else {
-            activeCaps.set(0)
-        }
-    }
-
-    fun ensureLoaded(fwId: String, soname: String, flashStore: FlashStore, masterAdc: Int): Future<Boolean> {
-        return executor.submit<Boolean> {
-            if (!NativeBridge.nativeFwLoaded()) {
-                val nor = flashStore.loadNor(fwId)
-                val ok = NativeBridge.nativeFwLoadNative(fwId, soname, nor, 0L, masterAdc)
-                flashStore.resetWriteCounter()
-                updateFwState()
-                ok
-            } else {
-                updateFwState()
-                true
+    /**
+     * Brings the native rack to [rack] (firmware id per slot, "" = empty), MASTER pot per slot in [masters]:
+     * a slot whose firmware changes saves its flash first. A firmware runs in one slot at most (one module, one
+     * state), so every slot that lets go is emptied before any loads.
+     */
+    fun syncRack(rack: List<String>, masters: List<Int>, flashStore: FlashStore): Future<Unit> {
+        return executor.submit<Unit> {
+            val n = minOf(rack.size, nativeSlots)
+            val want = Array(n) { i -> rack[i].takeIf { id -> id.isNotEmpty() && rack.indexOf(id) == i } ?: "" }
+            for (i in 0 until n) {
+                val current = NativeBridge.nativeFwActiveId(i)
+                if (current.isEmpty() || current == want[i]) continue
+                flashStore.saveActiveNow(i, current)
+                NativeBridge.nativeFwUnload(i)
+            }
+            for (i in n until nativeSlots) {
+                val current = NativeBridge.nativeFwActiveId(i)
+                if (current.isNotEmpty()) {
+                    flashStore.saveActiveNow(i, current)
+                    NativeBridge.nativeFwUnload(i)
+                }
+            }
+            for (i in 0 until n) {
+                val id = want[i]
+                if (id.isEmpty() || NativeBridge.nativeFwLoaded(i)) continue
+                val fw = FirmwareCatalog.findById(id) ?: continue
+                val nor = flashStore.loadNor(id, flashStore.getModuleNorSize(i))
+                NativeBridge.nativeFwLoadNative(i, id, fw.soname, nor, 0L, masters.getOrElse(i) { 700 })
+                flashStore.resetWriteCounter(i)
             }
         }
     }
 
-    fun loadFirmware(fwId: String, soname: String, flashStore: FlashStore, masterAdc: Int): Future<Boolean> {
-        return executor.submit<Boolean> {
-            val nor = flashStore.loadNor(fwId)
-            val ok = NativeBridge.nativeFwLoadNative(fwId, soname, nor, 0L, masterAdc)
-            flashStore.resetWriteCounter()
-            updateFwState()
-            ok
-        }
-    }
-
-    fun switchFirmware(oldFwId: String, newFwId: String, newSoname: String, flashStore: FlashStore, masterAdc: Int): Future<Boolean> {
-        return executor.submit<Boolean> {
-            flashStore.saveActiveNow(oldFwId)
-            val nor = flashStore.loadNor(newFwId)
-            val ok = NativeBridge.nativeFwLoadNative(newFwId, newSoname, nor, 0L, masterAdc)
-            flashStore.resetWriteCounter()
-            updateFwState()
-            ok
-        }
-    }
-
-    fun reloadFirmware(currentFwId: String, soname: String, flashStore: FlashStore, masterAdc: Int): Future<Boolean> {
-        return executor.submit<Boolean> {
-            flashStore.saveActiveNow(currentFwId)
-            val nor = flashStore.loadNor(currentFwId)
-            val ok = NativeBridge.nativeFwLoadNative(currentFwId, soname, nor, 0L, masterAdc)
-            flashStore.resetWriteCounter()
-            updateFwState()
-            ok
-        }
-    }
-
-    fun checkAndAutosave(activeFwId: String, flashStore: FlashStore): Future<Unit> {
+    /** Saves every slot whose flash changed (the 2 s autosave). */
+    fun checkAndAutosave(rack: List<String>, flashStore: FlashStore): Future<Unit> {
         return executor.submit<Unit> {
-            flashStore.checkAndAutosave(activeFwId)
+            for (i in 0 until minOf(rack.size, nativeSlots)) flashStore.checkAndAutosave(i, rack[i])
         }
     }
 
-    fun onStop(activeFwId: String, masterAdc: Int, flashStore: FlashStore): Future<Unit> {
+    /** Saves every slot now (on stop), ahead of whatever is queued after it. */
+    fun saveAll(rack: List<String>, flashStore: FlashStore): Future<Unit> {
         return executor.submit<Unit> {
-            flashStore.saveActiveNow(activeFwId)
-            flashStore.saveMasterAdc(masterAdc)
-            NativeBridge.nativeStopAudio()
-            isStarted = false
+            for (i in 0 until minOf(rack.size, nativeSlots)) flashStore.saveActiveNow(i, rack[i])
         }
     }
+
+    /** Rack meters: live load, live peak, then per slot loaded / load / level. */
+    fun readRack(out: FloatArray) = NativeBridge.nativeRackStatus(out)
 
     fun getStreamStatus(): StreamStatus {
         val arr = NativeBridge.nativeStreamInfo()

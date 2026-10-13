@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import io.github.fm1deck.engine.AudioController
 import io.github.fm1deck.engine.NativeBridge
 import kotlin.math.PI
 import kotlin.math.cos
@@ -35,6 +36,8 @@ fun rememberPanelState(active: Boolean = true): PanelState {
         // labels = page title, KNOB 1..4. Shorter arrays are left untouched there.
         val uiStateInts = IntArray(17)
         val uiStateLabels = Array<String?>(5) { null }
+        val slots = runCatching { AudioController.nativeSlots }.getOrDefault(0)
+        val rackBuffer = FloatArray(2 + 3 * slots)
 
         while (true) {
             withFrameNanos { frameNanos ->
@@ -49,7 +52,11 @@ fun rememberPanelState(active: Boolean = true): PanelState {
                 val breath = (0.5 - 0.5 * cos(2.0 * PI * tSec / 1.13)).toFloat()
                 state.breathLevel = breath
 
-                // 3. Screen bitmap blit
+                // 3. Screen bitmap blit (after a slot change: whatever frame that slot shows)
+                if (state.screenResync) {
+                    state.screenResync = false
+                    lastScreenFrame = -1
+                }
                 val newFrame = runCatching {
                     NativeBridge.nativeScreenInto(state.screenBitmap, lastScreenFrame)
                 }.getOrDefault(lastScreenFrame)
@@ -59,7 +66,15 @@ fun rememberPanelState(active: Boolean = true): PanelState {
                     state.screenFrameCount = newFrame
                 }
 
-                // 4. UI State polling (if firmware supports it)
+                // 4. The rack's meters
+                if (slots > 0 && runCatching { AudioController.readRack(rackBuffer) }.isSuccess) {
+                    state.dspLoad = rackBuffer[0]
+                    state.dspPeak = rackBuffer[1]
+                    state.slotLoads = FloatArray(slots) { rackBuffer[3 + 3 * it] }
+                    state.slotLevels = FloatArray(slots) { rackBuffer[4 + 3 * it] }
+                }
+
+                // 5. UI State polling (if firmware supports it)
                 val hasUi = runCatching {
                     NativeBridge.nativeUiState(uiStateInts, uiStateLabels)
                 }.getOrDefault(false)

@@ -34,6 +34,7 @@ import io.github.fm1deck.settings.AppSettings
 import io.github.fm1deck.settings.SettingsStore
 import io.github.fm1deck.ui.panel.Insets
 import io.github.fm1deck.ui.panel.PanelSurface
+import io.github.fm1deck.ui.panel.RackDrawer
 import io.github.fm1deck.ui.panel.SkinLayout
 import io.github.fm1deck.ui.panel.rememberPanelState
 import io.github.fm1deck.ui.panel.skin.PaletteRepository
@@ -48,7 +49,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var flashStore: FlashStore
     private lateinit var settingsFile: File
 
-    private var activeFirmwareState = mutableStateOf(FirmwareCatalog.defaultFirmware)
     private var settingsState = mutableStateOf(AppSettings())
     private var builtInMasterPresets: List<MasterPreset> = emptyList()
     private val userMasterPresetsState = mutableStateOf<List<MasterPreset>>(emptyList())
@@ -102,15 +102,13 @@ class MainActivity : ComponentActivity() {
             handleDebugIntent(intent)
         }
 
-        // Restore active firmware
-        val restoredFw = FirmwareCatalog.findById(loadedSettings.activeFwId) ?: FirmwareCatalog.defaultFirmware
-        activeFirmwareState.value = restoredFw
-
         setContent {
             val settings by settingsState
             val skins by skinsState
-            val activeFirmware by activeFirmwareState
+            // The focused rack slot's firmware: the one the panel plays and shows
+            val activeFirmware = FirmwareCatalog.findById(settings.activeFwId) ?: FirmwareCatalog.defaultFirmware
             var showSettings by remember { mutableStateOf(false) }
+            var showRack by remember { mutableStateOf(false) }
 
             val palettes = remember { PaletteRepository.loadFromAssets(assets) }
             val activePalette = palettes[settings.activePaletteId] ?: PaletteRepository.GRAPHITE
@@ -136,20 +134,28 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(settings.activeFwId) {
-                val target = FirmwareCatalog.findById(settings.activeFwId) ?: FirmwareCatalog.defaultFirmware
-                if (target.id != activeFirmwareState.value.id) {
-                    val oldFw = activeFirmwareState.value
-                    activeFirmwareState.value = target
-                    AudioController.switchFirmware(oldFw.id, target.id, target.soname, flashStore, settings.masterAdc)
-                }
+            // The rack: every slot's firmware loaded (a changed slot saves its flash first), the panel on the focused one
+            LaunchedEffect(settings.rack) {
+                AudioController.syncRack(settings.rack, settingsState.value.rackMasters, flashStore)
+            }
+            LaunchedEffect(settings.rackFocus) {
+                NativeBridge.nativeRackFocus(settings.rackFocus)
+            }
+            LaunchedEffect(settings.rackMute, settings.rackSolo) {
+                NativeBridge.nativeRackGate(settings.rackMute, settings.rackSolo)
+            }
+            // Two or more firmwares: one shared clock (tempo, PLAY / STOP; a newcomer joins on the next bar)
+            val rackClock = settings.rack.count { it.isNotEmpty() } > 1
+            LaunchedEffect(rackClock) {
+                LinkController.setLocal(rackClock)
+                if (rackClock && !LinkController.enabled) LinkController.setTempo(settingsState.value.rackTempo)
             }
 
-            // Autosave loop running in the background (~2 seconds)
-            LaunchedEffect(activeFirmware) {
+            // Autosave loop running in the background (~2 seconds), every slot
+            LaunchedEffect(Unit) {
                 while (isActive) {
                     delay(2000)
-                    AudioController.checkAndAutosave(activeFirmware.id, flashStore)
+                    AudioController.checkAndAutosave(settingsState.value.rack, flashStore)
                     AudioController.reopenIfNeeded()
                 }
             }
@@ -227,9 +233,27 @@ class MainActivity : ComponentActivity() {
                         panelState = panelState,
                         onGearClick = { showSettings = true },
                         onMasterChange = { newAdc ->
-                            updateSettings(settings.copy(masterAdc = newAdc))
+                            updateSettings(settingsState.value.withFocusMaster(newAdc))
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        onRackClick = { showRack = !showRack },
+                        rackOpen = showRack,
+                        onEmptyTap = { showRack = false }
+                    )
+
+                    RackDrawer(
+                        open = showRack,
+                        settings = settings,
+                        palette = activePalette,
+                        panelState = panelState,
+                        topPx = geometry.rackTab.bottom,
+                        onFocus = { slot -> updateSettings(settingsState.value.withFocus(slot)) },
+                        onAssign = { slot, id ->
+                            val next = settingsState.value.withSlot(slot, id)
+                            updateSettings(if (id.isNotEmpty()) next.withFocus(next.rack.indexOf(id)) else next)
+                        },
+                        onGate = { mute, solo -> updateSettings(settingsState.value.copy(rackMute = mute, rackSolo = solo)) },
+                        onTempo = { bpm -> updateSettings(settingsState.value.copy(rackTempo = bpm)) }
                     )
                 }
 
@@ -318,6 +342,21 @@ class MainActivity : ComponentActivity() {
                     ) + " meters=" + meters.joinToString(",") { "%.1f".format(it) }
             )
         }
+        // --ez link true|false: Ableton Link on the network (as Settings → MIDI → LINK)
+        if (intent?.hasExtra("link") == true) {
+            LinkController.setEnabled(this, intent.getBooleanExtra("link", false))
+        }
+        // --es rack "hortator,jiant," (ids per slot, empty = empty slot) and/or --ei focus 0..2: the rack
+        val rackExtra = intent?.getStringExtra("rack")
+        val focusExtra = intent?.getIntExtra("focus", -1) ?: -1
+        if (rackExtra != null || focusExtra >= 0) {
+            var next = settingsState.value
+            if (rackExtra != null) {
+                next = next.copy(rack = rackExtra.split(',').map { it.trim() }).normalized { FirmwareCatalog.findById(it) != null }
+            }
+            if (focusExtra >= 0) next = next.withFocus(focusExtra)
+            updateSettings(next)
+        }
         if (skinExtra != null || paletteExtra != null || framesExtra != null) {
             val current = settingsState.value
             val updated = current.copy(
@@ -333,15 +372,15 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         AudioController.start()
         NativeBridge.nativeSetScreenWanted(true)
-        val fw = activeFirmwareState.value
-        AudioController.ensureLoaded(fw.id, fw.soname, flashStore, settingsState.value.masterAdc)
+        val s = settingsState.value
+        NativeBridge.nativeRackFocus(s.rackFocus)
+        AudioController.syncRack(s.rack, s.rackMasters, flashStore)
     }
 
     override fun onStop() {
         super.onStop()
         NativeBridge.nativeSetScreenWanted(false)
-        val fw = activeFirmwareState.value
-        flashStore.saveActiveNow(fw.id)
+        AudioController.saveAll(settingsState.value.rack, flashStore)
         AudioController.stop()
     }
 }

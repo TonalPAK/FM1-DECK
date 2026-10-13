@@ -14,12 +14,14 @@ data class LinkStatus(
     val playing: Boolean = false,
     val beat: Double = 0.0,
     val quantum: Int = 4,
-    val latencyMs: Double = 0.0
+    val latencyMs: Double = 0.0,
+    /** The rack's shared clock is on (two or more firmwares): PLAY / STOP and tempo are common. */
+    val local: Boolean = false
 ) {
     companion object {
         fun from(v: DoubleArray) = LinkStatus(
             enabled = v[0] >= 0.5, peers = v[1].toInt(), tempo = v[2], playing = v[3] >= 0.5,
-            beat = v[4], quantum = v[5].toInt(), latencyMs = v[6]
+            beat = v[4], quantum = v[5].toInt(), latencyMs = v[6], local = v.size > 7 && v[7] >= 0.5
         )
     }
 }
@@ -42,11 +44,13 @@ object LinkController {
         enabled = on
     }
 
+    /** The rack's shared clock (no network): on while two or more slots hold a firmware. */
+    fun setLocal(on: Boolean) = NativeBridge.nativeLinkSetLocal(on)
     fun setTempo(bpm: Double) = NativeBridge.nativeLinkSetTempo(bpm.coerceIn(20.0, 999.0))
     fun setQuantum(beats: Int) = NativeBridge.nativeLinkSetQuantum(beats)
     fun togglePlay() = NativeBridge.nativeLinkTogglePlay()
 
-    private val buf = DoubleArray(7)
+    private val buf = DoubleArray(8)
     fun status(): LinkStatus {
         NativeBridge.nativeLinkStatus(buf)
         return LinkStatus.from(buf)

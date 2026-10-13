@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +62,12 @@ fun PanelSurface(
     panelState: PanelState,
     onGearClick: () -> Unit,
     onMasterChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRackClick: () -> Unit = {},
+    /** The rack drawer is out (the tab lights). */
+    rackOpen: Boolean = false,
+    /** A press on the panel's empty space (no control there): closes the rack drawer. */
+    onEmptyTap: () -> Unit = {}
 ) {
     val view = LocalView.current
     val density = LocalDensity.current.density
@@ -82,7 +88,19 @@ fun PanelSurface(
     var showDebugOverlay by remember { mutableStateOf(false) }
 
     val settingsNow by rememberUpdatedState(settings)
+
+    // Another rack slot took the panel: nothing stays held or latched, MASTER shows that slot's pot
+    LaunchedEffect(settings.rackFocus) {
+        fnOn = false
+        latchedMask = 0
+        heldButtonsMask = 0
+        heldKeysMask = 0
+        masterAdc = settingsNow.masterAdc
+        panelState.screenResync = true
+    }
     val onMasterNow by rememberUpdatedState(onMasterChange)
+    val onEmptyTapNow by rememberUpdatedState(onEmptyTap)
+    val onRackClickNow by rememberUpdatedState(onRackClick)
     val systemKnobs = remember(geometry) { geometry.knobs.filter { it.role in 0..2 } }
     val octButtons = remember(geometry) { geometry.buttons.filter { it.index in 12..13 } }
 
@@ -156,6 +174,10 @@ fun PanelSurface(
                                     is PanelTarget.Gear -> {
                                         onGearClick()
                                     }
+                                    is PanelTarget.RackTab -> {
+                                        onRackClickNow()
+                                        triggerHaptic()
+                                    }
                                     is PanelTarget.Screen -> {
                                         val now = System.currentTimeMillis()
                                         screenTouchTimes.add(now)
@@ -168,7 +190,7 @@ fun PanelSurface(
                                             triggerHaptic()
                                         }
                                     }
-                                    null -> {}
+                                    null -> onEmptyTapNow()
                                 }
                                 change.consume()
                             } else if (change.pressed) {
@@ -360,12 +382,14 @@ fun PanelSurface(
             hintDrawer = null // Hook for P4
         )
 
-        // 5. Settings: a small dot in the top-left corner; green while Ableton Link is on
+        // 5. Settings: a small dot in the top-left corner; green while Ableton Link is on. Under it the DSP meter.
         drawCircle(
             color = if (LinkController.enabled) Color(0xFF5FE08A) else palette.buttonLabel.copy(alpha = 0.85f),
             radius = geometry.gear.radius,
             center = geometry.gear.center.toOffset()
         )
+        RackChrome.drawDspMeter(this, geometry, palette, panelState.dspLoad, panelState.dspPeak)
+        RackChrome.drawTab(this, geometry, palette, settings.rack, settings.rackFocus, rackOpen)
 
         // 6. Hidden Debug Overlay (T10)
         if (showDebugOverlay) {

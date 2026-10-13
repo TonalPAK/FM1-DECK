@@ -13,7 +13,7 @@ extern "C" {
 
 JNIEXPORT jboolean JNICALL
 Java_io_github_fm1deck_engine_NativeBridge_nativeFwLoadNative(
-        JNIEnv* env, jobject /*thiz*/, jstring jid, jstring jpath, jbyteArray jnor, jlong seed, jint masterAdc) {
+        JNIEnv* env, jobject /*thiz*/, jint slot, jstring jid, jstring jpath, jbyteArray jnor, jlong seed, jint masterAdc) {
     if (!jid) return JNI_FALSE;
     const char* idChars = env->GetStringUTFChars(jid, nullptr);
     std::string id(idChars);
@@ -33,55 +33,62 @@ Java_io_github_fm1deck_engine_NativeBridge_nativeFwLoadNative(
         env->GetByteArrayRegion(jnor, 0, len, reinterpret_cast<jbyte*>(nor.data()));
     }
 
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    if (!host) return JNI_FALSE;
     std::string err;
-    bool ok = fm1deck::getAudioEngine().host()->load(
+    bool ok = host->load(
             id, path, nor, static_cast<uint32_t>(seed), static_cast<uint32_t>(masterAdc), err);
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jlong JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwNorSize(JNIEnv* /*env*/, jobject /*thiz*/) {
-    auto* host = fm1deck::getAudioEngine().host();
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwNorSize(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
     return host ? static_cast<jlong>(host->norSize()) : 0;
 }
 
 JNIEXPORT jstring JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwActiveId(JNIEnv* env, jobject /*thiz*/) {
-    auto* host = fm1deck::getAudioEngine().host();
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwActiveId(JNIEnv* env, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
     std::string id = host ? host->activeId() : "";
     return env->NewStringUTF(id.c_str());
 }
 
 JNIEXPORT void JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwUnload(JNIEnv* /*env*/, jobject /*thiz*/) {
-    fm1deck::getAudioEngine().host()->unload();
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwUnload(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    if (auto* host = fm1deck::getAudioEngine().host(slot)) host->unload();
 }
 
 JNIEXPORT jboolean JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwLoaded(JNIEnv* /*env*/, jobject /*thiz*/) {
-    return fm1deck::getAudioEngine().host()->loaded() ? JNI_TRUE : JNI_FALSE;
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwLoaded(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    return (host && host->loaded()) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jstring JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwInfo(JNIEnv* env, jobject /*thiz*/) {
-    std::string info = fm1deck::getAudioEngine().host()->info();
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwInfo(JNIEnv* env, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    std::string info = host ? host->info() : "";
     return env->NewStringUTF(info.c_str());
 }
 
 JNIEXPORT jint JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwCaps(JNIEnv* /*env*/, jobject /*thiz*/) {
-    return static_cast<jint>(fm1deck::getAudioEngine().host()->caps());
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwCaps(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    return host ? static_cast<jint>(host->caps()) : 0;
 }
 
 JNIEXPORT jlong JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwSaveNow(JNIEnv* /*env*/, jobject /*thiz*/) {
-    return static_cast<jlong>(fm1deck::getAudioEngine().host()->saveNow());
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwSaveNow(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    return host ? static_cast<jlong>(host->saveNow()) : -1;
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwSnapshotNor(JNIEnv* env, jobject /*thiz*/) {
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwSnapshotNor(JNIEnv* env, jobject /*thiz*/, jint slot) {
     std::vector<uint8_t> nor;
-    if (!fm1deck::getAudioEngine().host()->snapshot(nor)) {
+    auto* host = fm1deck::getAudioEngine().host(slot);
+    if (!host || !host->snapshot(nor)) {
         return nullptr;
     }
     jbyteArray arr = env->NewByteArray(static_cast<jsize>(nor.size()));
@@ -92,9 +99,9 @@ Java_io_github_fm1deck_engine_NativeBridge_nativeFwSnapshotNor(JNIEnv* env, jobj
 }
 
 JNIEXPORT jlong JNICALL
-Java_io_github_fm1deck_engine_NativeBridge_nativeFwNorWrites(JNIEnv* /*env*/, jobject /*thiz*/) {
-    auto* slot = fm1deck::getAudioEngine().slot();
-    return static_cast<jlong>(slot ? slot->norWrites() : 0);
+Java_io_github_fm1deck_engine_NativeBridge_nativeFwNorWrites(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    auto* s = fm1deck::getAudioEngine().slot(slot);
+    return static_cast<jlong>(s ? s->norWrites() : 0);
 }
 
 JNIEXPORT jboolean JNICALL
@@ -223,8 +230,43 @@ Java_io_github_fm1deck_engine_NativeBridge_nativeUiState(JNIEnv* env, jobject /*
 
 JNIEXPORT void JNICALL
 Java_io_github_fm1deck_engine_NativeBridge_nativeSetScreenWanted(JNIEnv* /*env*/, jobject /*thiz*/, jboolean wanted) {
-    auto* slot = fm1deck::getAudioEngine().slot();
-    if (slot) slot->setScreenWanted(wanted == JNI_TRUE);
+    fm1deck::getAudioEngine().setScreenWanted(wanted == JNI_TRUE);
+}
+
+// ---- the rack -----------------------------------------------------------------------------------------------------
+
+JNIEXPORT jint JNICALL
+Java_io_github_fm1deck_engine_NativeBridge_nativeRackSlots(JNIEnv* /*env*/, jobject /*thiz*/) {
+    return fm1deck::AudioEngine::kSlots;
+}
+
+JNIEXPORT void JNICALL
+Java_io_github_fm1deck_engine_NativeBridge_nativeRackFocus(JNIEnv* /*env*/, jobject /*thiz*/, jint slot) {
+    fm1deck::getAudioEngine().setFocus(slot);
+}
+
+/** Mute and solo masks, a bit per slot. */
+JNIEXPORT void JNICALL
+Java_io_github_fm1deck_engine_NativeBridge_nativeRackGate(JNIEnv* /*env*/, jobject /*thiz*/, jint mute, jint solo) {
+    fm1deck::getAudioEngine().setGate(static_cast<uint32_t>(mute), static_cast<uint32_t>(solo));
+}
+
+/** out: [live load, live peak, then per slot: loaded (0/1), load, output peak]; shares of the callback budget. */
+JNIEXPORT void JNICALL
+Java_io_github_fm1deck_engine_NativeBridge_nativeRackStatus(JNIEnv* env, jobject /*thiz*/, jfloatArray out) {
+    constexpr int n = 2 + 3 * fm1deck::AudioEngine::kSlots;
+    if (!out || env->GetArrayLength(out) < n) return;
+    auto& engine = fm1deck::getAudioEngine();
+    jfloat v[n];
+    v[0] = engine.liveLoad();
+    v[1] = engine.livePeak();
+    for (int i = 0; i < fm1deck::AudioEngine::kSlots; ++i) {
+        const auto m = engine.slotMeter(i);
+        v[2 + 3 * i] = engine.slot(i)->firmware() ? 1.0f : 0.0f;
+        v[3 + 3 * i] = m.load;
+        v[4 + 3 * i] = m.level;
+    }
+    env->SetFloatArrayRegion(out, 0, n, v);
 }
 
 JNIEXPORT jboolean JNICALL

@@ -17,31 +17,34 @@ class FlashStore(private val context: Context) {
         private const val PREFS_NAME = "fm1_settings"
         private const val KEY_MASTER_ADC = "master_adc"
         private const val DEFAULT_MASTER_ADC = 700
+        /** The native rack's slot count is at most this (AudioEngine::kSlots). */
+        const val RACK_CAPACITY = 8
     }
 
     private val fileStore = FlashFileStore(context.filesDir) { msg -> Log.d(TAG, msg) }
 
-    @Volatile
-    private var lastSavedWrites = 0L
+    /** Flash writes already on disk, per rack slot. */
+    private val lastSavedWrites = LongArray(RACK_CAPACITY)
 
     fun getNorFile(id: String): File = fileStore.getNorFile(id)
 
-    fun loadNor(id: String, expectedSize: Int = getModuleNorSize()): ByteArray? {
+    fun loadNor(id: String, expectedSize: Int): ByteArray? {
         return fileStore.loadNor(id, expectedSize)
     }
 
-    fun saveNor(id: String, data: ByteArray, expectedSize: Int = getModuleNorSize()): Boolean {
+    fun saveNor(id: String, data: ByteArray, expectedSize: Int): Boolean {
         return fileStore.saveNor(id, data, expectedSize)
     }
 
-    fun saveActiveNow(id: String): Boolean {
-        if (id.isEmpty()) return false
-        val norSize = getModuleNorSize()
-        NativeBridge.nativeFwSaveNow()
-        val snapshot = NativeBridge.nativeFwSnapshotNor()
+    /** Saves the flash of the firmware [id] running in [slot] (nothing when another one runs there). */
+    fun saveActiveNow(slot: Int, id: String): Boolean {
+        if (id.isEmpty() || NativeBridge.nativeFwActiveId(slot) != id) return false
+        val norSize = getModuleNorSize(slot)
+        NativeBridge.nativeFwSaveNow(slot)
+        val snapshot = NativeBridge.nativeFwSnapshotNor(slot)
         return if (snapshot != null) {
             val ok = saveNor(id, snapshot, norSize)
-            if (ok) lastSavedWrites = NativeBridge.nativeFwNorWrites()
+            if (ok) lastSavedWrites[slot] = NativeBridge.nativeFwNorWrites(slot)
             ok
         } else {
             Log.w(TAG, "Snapshot returned null for $id")
@@ -49,31 +52,31 @@ class FlashStore(private val context: Context) {
         }
     }
 
-    fun checkAndAutosave(targetId: String) {
+    fun checkAndAutosave(slot: Int, targetId: String) {
         if (targetId.isEmpty()) return
-        val activeId = NativeBridge.nativeFwActiveId()
+        val activeId = NativeBridge.nativeFwActiveId(slot)
         if (activeId != targetId) {
-            Log.d(TAG, "Skipping autosave: active firmware ($activeId) != target ($targetId)")
+            Log.d(TAG, "Skipping autosave: slot $slot runs ($activeId), not ($targetId)")
             return
         }
 
-        val writes = NativeBridge.nativeFwNorWrites()
-        if (writes > lastSavedWrites) {
-            val norSize = getModuleNorSize()
-            val snapshot = NativeBridge.nativeFwSnapshotNor()
+        val writes = NativeBridge.nativeFwNorWrites(slot)
+        if (writes > lastSavedWrites[slot]) {
+            val norSize = getModuleNorSize(slot)
+            val snapshot = NativeBridge.nativeFwSnapshotNor(slot)
             if (snapshot != null) {
                 // Re-check active id after snapshot
-                if (NativeBridge.nativeFwActiveId() == targetId) {
+                if (NativeBridge.nativeFwActiveId(slot) == targetId) {
                     if (saveNor(targetId, snapshot, norSize)) {
-                        lastSavedWrites = writes
+                        lastSavedWrites[slot] = writes
                     }
                 }
             }
         }
     }
 
-    fun resetWriteCounter() {
-        lastSavedWrites = NativeBridge.nativeFwNorWrites()
+    fun resetWriteCounter(slot: Int) {
+        lastSavedWrites[slot] = NativeBridge.nativeFwNorWrites(slot)
     }
 
     fun loadMasterAdc(): Int {
@@ -87,8 +90,9 @@ class FlashStore(private val context: Context) {
         prefs.edit().putInt(KEY_MASTER_ADC, clamped).apply()
     }
 
-    private fun getModuleNorSize(): Int {
-        val size = NativeBridge.nativeFwNorSize()
+    /** The flash size of the module in [slot]; before one is loaded, the size every FM-1 firmware uses. */
+    fun getModuleNorSize(slot: Int): Int {
+        val size = NativeBridge.nativeFwNorSize(slot)
         return if (size > 0) size.toInt() else DEFAULT_NOR_SIZE
     }
 }

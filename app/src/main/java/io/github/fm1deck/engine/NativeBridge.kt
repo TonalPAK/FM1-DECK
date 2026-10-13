@@ -20,17 +20,26 @@ object NativeBridge {
     external fun nativeCpuLoad(): FloatArray
     external fun nativeResetCpuMetrics()
 
-    external fun nativeFwLoadNative(id: String, path: String, nor: ByteArray?, seed: Long, masterAdc: Int): Boolean
-    external fun nativeFwUnload()
-    external fun nativeFwLoaded(): Boolean
-    external fun nativeFwInfo(): String
-    external fun nativeFwCaps(): Int
-    external fun nativeFwNorSize(): Long
-    external fun nativeFwActiveId(): String
-    external fun nativeFwSaveNow(): Long
-    external fun nativeFwSnapshotNor(): ByteArray?
-    external fun nativeFwNorWrites(): Long
+    // Firmware per rack slot (0 until nativeRackSlots()); the panel calls below go to the focused slot
+    external fun nativeFwLoadNative(slot: Int, id: String, path: String, nor: ByteArray?, seed: Long, masterAdc: Int): Boolean
+    external fun nativeFwUnload(slot: Int)
+    external fun nativeFwLoaded(slot: Int): Boolean
+    external fun nativeFwInfo(slot: Int): String
+    external fun nativeFwCaps(slot: Int): Int
+    external fun nativeFwNorSize(slot: Int): Long
+    external fun nativeFwActiveId(slot: Int): String
+    external fun nativeFwSaveNow(slot: Int): Long
+    external fun nativeFwSnapshotNor(slot: Int): ByteArray?
+    external fun nativeFwNorWrites(slot: Int): Long
     external fun nativeFwTestHeavy(): Boolean
+
+    // The rack: several firmwares rendered at once into the master bus
+    external fun nativeRackSlots(): Int
+    external fun nativeRackFocus(slot: Int)
+    /** Mute and solo, a bit per slot (any solo: only the soloed slots are heard). */
+    external fun nativeRackGate(mute: Int, solo: Int)
+    /** out[2 + 3 * slots]: live load, live peak, then per slot loaded (0/1), load, output peak. */
+    external fun nativeRackStatus(out: FloatArray)
 
     external fun nativePanel(buttons: Int, keys: Int)
     external fun nativeEnc(role: Int, steps: Int)
@@ -57,9 +66,11 @@ object NativeBridge {
 
     // Ableton Link (docs/LINK.md): off until the user switches it on
     external fun nativeLinkEnable(on: Boolean)
+    /** The rack's shared clock: every slot follows one timeline, without the network. */
+    external fun nativeLinkSetLocal(on: Boolean)
     external fun nativeLinkSetTempo(bpm: Double)
     external fun nativeLinkSetQuantum(beats: Int)
     external fun nativeLinkTogglePlay()
-    /** out[7]: enabled, peers, tempo, playing, beat, quantum, output latency ms. */
+    /** out[8]: enabled, peers, tempo, playing, beat, quantum, output latency ms, rack clock. */
     external fun nativeLinkStatus(out: DoubleArray)
 }
