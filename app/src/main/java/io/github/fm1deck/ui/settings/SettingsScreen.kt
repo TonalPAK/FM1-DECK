@@ -172,6 +172,8 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // The tabs scroll on a short screen; Close stays at the bottom
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 SettingsTab.entries.forEach { tab ->
                     val isSelected = selectedTab == tab
                     Box(
@@ -189,8 +191,9 @@ fun SettingsScreen(
                         )
                     }
                 }
+                }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
                     onClick = onClose,

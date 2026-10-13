@@ -25,6 +25,9 @@ It is not a remake and not an imitation. The authors' own C code runs on the pho
 sequencer, the same engines, the same screens, the same button combos. FM1 DECK gives it a body — a touch panel
 with the original controls, a low-latency audio engine, a master bus, and a Wi-Fi link to jam with other phones.
 
+**New in 0.2: three grooveboxes in one.** Load up to three firmwares into the rack and play them at once — one
+master bus, one tempo, one PLAY. Switch between them with a thumb, mute or solo each, save the whole set as a session.
+
 > **Status: preview.** Built and tested on a Samsung Galaxy M52 5G and a POCO C75. Features marked *planned* are
 > on the [roadmap](#roadmap), not in the app yet.
 
@@ -78,12 +81,14 @@ From there, each firmware's own manual opens its world: [Felucca](https://github
 | **OCT− / OCT+** | Octave buttons, own island | Keyboard octave, and the firmware's combos |
 | **F** | Latch (app) | Keeps the next buttons held until you tap them or F again |
 | **27 keys** F3–G5 | Keyboard with note names | Notes; in a layer, functions — the lit letters |
-| **Dot, top-left** | Settings (app) | Skin, Firmware, Audio, Master, MIDI/Link, About; green while Link is on |
+| **Dot, top-left** | Settings (app) | Session, Skin, Firmware, Audio, Master, MIDI/Link, About; green while Link is on; the bar under it is the DSP load |
+| **Triangle, top-right** | The rack (app) | Opens the drawer: the three slots, tempo, PLAY, mute / solo |
 
 | In Settings | What for |
 |---|---|
-| **Skin** | Choose one of six layouts; keyboard height, knob sensitivity, fine mode, glissando, haptics |
-| **Firmware** | Switch between JIANT FM, Felucca, SLOOP and Hortator (each keeps its own projects) |
+| **Session** | Save the whole rack under a name — every firmware with its flash, volumes, mute / solo, tempo — and load it back |
+| **Skin** | Choose one of seven layouts; keyboard height, knob sensitivity, key light colour, beat marks, haptics |
+| **Firmware** | Pick the firmware of the slot you play: JIANT FM, Felucca, SLOOP or Hortator (each keeps its own projects) |
 | **Audio** | Master-bus quality ×1–×8; stream, latency and CPU — check here if you hear crackles |
 | **Master** | The mastering chain: presets, A/B, bypass, the scope that shows peaks being pressed |
 | **MIDI** | Ableton Link — play in sync with other phones and apps |
@@ -93,16 +98,34 @@ The full manual: **[docs/MANUAL.md](docs/MANUAL.md)**.
 
 ## Four firmwares, one panel
 
-<p align="center"><img src="docs/images/firmwares.png" alt="The screens of JIANT FM, Felucca and SLOOP" width="100%"></p>
+<p align="center"><img src="docs/images/firmwares.png" alt="The screens of JIANT FM, Felucca, SLOOP and Hortator" width="100%"></p>
 
 | | Firmware | Its soul | Author |
 |---|---|---|---|
 | ![](docs/images/firmware-jiant.png) | **JIANT FM** 0.6.75 | A "bio-synthetic operating system": many engines, mutation, songs with ARRANGE and UNDO, made for playing live | [juanjiant-bit](https://github.com/juanjiant-bit/JIANT) |
 | ![](docs/images/firmware-felucca.png) | **Felucca** 1.6 | The original alternative firmware: FM voices, a step sequencer with chance and ratchets, MIDI learn, insert effects | [Leo Kuroshita / Hügelton Instruments](https://github.com/hugelton/Felucca) |
 | ![](docs/images/firmware-sloop.png) | **SLOOP** 2.6 | A live groovebox for any style: tracks, loops, an arranger, 12 engines | [isod89](https://github.com/isod89/sloop-fm1) |
+| ![](docs/images/firmware-hortator.png) | **Hortator** DRUM-0.16.0 | An eight-track drum machine: steps, Grids, an ACID bass line, PERFORM | [DEADACTIVE](https://github.com/DeadActive/hortator) |
 
-Switch between them in **Settings → Firmware**. Each keeps its own 1 MB flash — your projects and presets wait for
-you when you come back.
+Each keeps its own 1 MB flash — your projects and presets wait for you when you come back.
+
+## Three at once — the rack
+
+<p align="center"><img src="docs/images/rack.png" alt="The rack drawer: DSP load, shared tempo, three slots with level, CPU, mute and solo" width="100%"></p>
+
+- **Up to three firmwares play together**, summed into the one master bus. The panel plays the slot you pick; the
+  others keep running.
+- **Tap the triangle** in the top-right corner: the drawer slides out. Tap a slot to play it, the ▾ arrow to choose
+  its firmware, **M** / **S** to mute or solo it, swipe a slot sideways to switch it off. Tap anywhere empty to close.
+- **One clock.** With two or more firmwares, tempo and PLAY / STOP are shared: PLAY on any of them starts them all,
+  and a firmware you add while they play comes in on the next bar. Drag the BPM in the drawer to change the tempo;
+  with Link on, the clock is the Link session's.
+- **DSP meter** under the settings dot and in the drawer: how much of the phone's audio time the rack uses, so you
+  know when a fourth idea is one too many.
+- **Sessions** (Settings → Session): one tap saves everything — the three machines with their flash, volumes,
+  mute / solo, tempo — under a name, one tap brings it back.
+
+<p align="center"><img src="docs/images/settings-session.png" alt="Settings → Session: save the rack under a name, load or delete saved sessions" width="100%"></p>
 
 ## Play it like the hardware
 
@@ -116,11 +139,17 @@ you when you come back.
   the key. While you play, the letters glow with the LEDs.
 - **F — latch.** Holding a phone with two hands, you have no finger left to hold GLO *and* turn a knob. Tap **F**,
   tap GLO: it stays held until you let it go. One thumb, the whole layer.
-- **Knobs that feel right**: drag up or down, fine steps on hold, a glow while you touch.
+- **Knobs that feel right**: drag up or down, fine steps on hold, a glow while you touch. Their names follow the
+  firmware's page.
+- **Key light in your colour.** The key LEDs can glow red, orange, amber, green, cyan, blue, violet or pink instead of
+  white, and thin marks split the 16 white keys into beats — a running pattern reads at a glance.
 
-## Six layouts
+<p align="center"><img src="docs/images/key-light.png" alt="Hortator's sequencer on the keys in cyan, with beat marks every four steps" width="100%"></p>
 
-The same controls in six arrangements — pick the one that fits your hands. The keyboard always spans the full width.
+## Seven layouts
+
+The same controls in six landscape arrangements, plus **Portrait** — a gamepad layout for the phone held upright.
+The keyboard always spans the full width.
 
 | | | |
 |---|---|---|
@@ -223,6 +252,7 @@ docs/                    manual, how it works, design docs, screenshots
 - [x] The full panel, six layouts, note names, F latch
 - [x] Master bus with scope, presets, A/B
 - [x] Ableton Link: tempo, phase, start/stop
+- [x] The rack: three firmwares at once, shared clock, mute / solo, sessions
 - [ ] Firmware updates from a file, flash backups *(planned)*
 - [ ] Hints on keys and knobs for every layer *(planned)*
 - [ ] Recorder: WAV of what you play *(planned)*
