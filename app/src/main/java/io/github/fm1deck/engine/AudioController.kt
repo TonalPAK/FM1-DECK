@@ -2,6 +2,8 @@ package io.github.fm1deck.engine
 
 import io.github.fm1deck.fw.FirmwareCatalog
 import io.github.fm1deck.fw.flash.FlashStore
+import io.github.fm1deck.settings.Session
+import io.github.fm1deck.settings.SessionStore
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
@@ -87,7 +89,12 @@ object AudioController {
      * state), so every slot that lets go is emptied before any loads.
      */
     fun syncRack(rack: List<String>, masters: List<Int>, flashStore: FlashStore): Future<Unit> {
-        return executor.submit<Unit> {
+        return executor.submit<Unit> { syncNow(rack, masters, flashStore) }
+    }
+
+    /** On the executor: [syncRack]'s work. */
+    private fun syncNow(rack: List<String>, masters: List<Int>, flashStore: FlashStore) {
+        run {
             val n = minOf(rack.size, nativeSlots)
             val want = Array(n) { i -> rack[i].takeIf { id -> id.isNotEmpty() && rack.indexOf(id) == i } ?: "" }
             for (i in 0 until n) {
@@ -111,6 +118,51 @@ object AudioController {
                 NativeBridge.nativeFwLoadNative(i, id, fw.soname, nor, 0L, masters.getOrElse(i) { 700 })
                 flashStore.resetWriteCounter(i)
             }
+        }
+    }
+
+    /**
+     * Saves the rack as [session]: every slot's flash written now (as the autosave does) and copied into the
+     * session's folder, then its session.json.
+     */
+    fun saveSession(session: Session, store: SessionStore, flashStore: FlashStore): Future<Boolean> {
+        return executor.submit<Boolean> {
+            runCatching {
+                val dir = store.dir(session.id).apply { mkdirs() }
+                dir.listFiles { f -> f.name.endsWith(".bin") }?.forEach { it.delete() }
+                for (i in 0 until minOf(session.rack.size, nativeSlots)) {
+                    val id = session.rack[i]
+                    if (id.isEmpty()) continue
+                    flashStore.saveActiveNow(i, id)
+                    val live = flashStore.getNorFile(id)
+                    if (live.exists()) live.copyTo(store.flashFile(session.id, id), overwrite = true)
+                }
+                store.writeMeta(session)
+                true
+            }.getOrDefault(false)
+        }
+    }
+
+    /**
+     * Brings [session] back: every slot saves and lets go of its firmware, the session's flash images become the
+     * firmwares' own, and the session's rack loads from them (the settings follow on the main thread).
+     */
+    fun loadSession(session: Session, store: SessionStore, flashStore: FlashStore): Future<Boolean> {
+        return executor.submit<Boolean> {
+            for (i in 0 until nativeSlots) {
+                val current = NativeBridge.nativeFwActiveId(i)
+                if (current.isEmpty()) continue
+                flashStore.saveActiveNow(i, current)
+                NativeBridge.nativeFwUnload(i)
+            }
+            for (id in session.rack.filter { it.isNotEmpty() }.distinct()) {
+                val f = store.flashFile(session.id, id)
+                if (f.exists() && f.length() == FlashStore.DEFAULT_NOR_SIZE.toLong()) {
+                    flashStore.saveNor(id, f.readBytes(), FlashStore.DEFAULT_NOR_SIZE)
+                }
+            }
+            syncNow(session.rack, session.rackMasters, flashStore)
+            true
         }
     }
 

@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.util.Log
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -31,12 +32,15 @@ import io.github.fm1deck.fw.FirmwareCatalog
 import io.github.fm1deck.fw.FirmwareEntry
 import io.github.fm1deck.fw.flash.FlashStore
 import io.github.fm1deck.settings.AppSettings
+import io.github.fm1deck.settings.Session
+import io.github.fm1deck.settings.SessionStore
 import io.github.fm1deck.settings.SettingsStore
 import io.github.fm1deck.ui.panel.Insets
 import io.github.fm1deck.ui.panel.PanelSurface
 import io.github.fm1deck.ui.panel.RackDrawer
 import io.github.fm1deck.ui.panel.SkinLayout
 import io.github.fm1deck.ui.panel.rememberPanelState
+import io.github.fm1deck.ui.panel.skin.KeyLight
 import io.github.fm1deck.ui.panel.skin.PaletteRepository
 import io.github.fm1deck.ui.panel.skin.Skin
 import io.github.fm1deck.ui.panel.skin.SkinRepository
@@ -53,6 +57,8 @@ class MainActivity : ComponentActivity() {
     private var builtInMasterPresets: List<MasterPreset> = emptyList()
     private val userMasterPresetsState = mutableStateOf<List<MasterPreset>>(emptyList())
     private var skinsState = mutableStateOf<List<Skin>>(emptyList())
+    private lateinit var sessionStore: SessionStore
+    private val sessionsState = mutableStateOf<List<Session>>(emptyList())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +83,8 @@ class MainActivity : ComponentActivity() {
 
         flashStore = FlashStore(this)
         settingsFile = File(filesDir, "settings.json")
+        sessionStore = SessionStore(filesDir)
+        sessionsState.value = sessionStore.list()
         val loadedSettings = SettingsStore.load(settingsFile)
         settingsState.value = loadedSettings
 
@@ -111,7 +119,9 @@ class MainActivity : ComponentActivity() {
             var showRack by remember { mutableStateOf(false) }
 
             val palettes = remember { PaletteRepository.loadFromAssets(assets) }
-            val activePalette = palettes[settings.activePaletteId] ?: PaletteRepository.GRAPHITE
+            val basePalette = palettes[settings.activePaletteId] ?: PaletteRepository.GRAPHITE
+            // The key LEDs in the colour chosen in Settings → Skin
+            val activePalette = remember(basePalette, settings.keyLight) { KeyLight.apply(basePalette, settings.keyLight) }
 
             val activeSkin = remember(settings.activeSkinId, skins) {
                 skins.firstOrNull { it.id == settings.activeSkinId } ?: skins.firstOrNull()
@@ -267,6 +277,14 @@ class MainActivity : ComponentActivity() {
                         builtInMasterPresets = builtInMasterPresets,
                         userMasterPresets = userMasterPresetsState.value,
                         onSaveMasterPreset = { preset -> saveUserMasterPreset(preset) },
+                        sessions = sessionsState.value,
+                        suggestedSessionName = remember(sessionsState.value) { sessionStore.nextName() },
+                        onSaveSession = { name -> saveSession(name) },
+                        onLoadSession = { session -> loadSession(session) },
+                        onDeleteSession = { session ->
+                            sessionStore.delete(session.id)
+                            sessionsState.value = sessionStore.list()
+                        },
                         onClose = { showSettings = false }
                     )
                 }
@@ -294,6 +312,31 @@ class MainActivity : ComponentActivity() {
         val safe = preset.name.replace(Regex("[^\\p{L}0-9 _-]"), "_").trim().ifEmpty { "preset" }
         File(dir, "$safe.json").writeText(preset.toJson())
         userMasterPresetsState.value = loadUserMasterPresets()
+    }
+
+    /** Settings → Session → SAVE: the rack with every firmware's flash, under [name] (saved over if it exists). */
+    private fun saveSession(name: String) {
+        val now = System.currentTimeMillis()
+        val id = sessionStore.findByName(name)?.id ?: sessionStore.newId(name, now)
+        val session = Session.of(id, name, settingsState.value, now)
+        AudioController.saveSession(session, sessionStore, flashStore)
+        // After the save (the same executor): the list, and a word
+        AudioController.executor.execute {
+            val list = sessionStore.list()
+            runOnUiThread {
+                sessionsState.value = list
+                Toast.makeText(this, "Session saved: $name", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /** Settings → Session → LOAD: every slot as the session left it (its flash, MASTER, mute / solo, tempo). */
+    private fun loadSession(session: Session) {
+        AudioController.loadSession(session, sessionStore, flashStore)
+        val next = session.applyTo(settingsState.value)
+        updateSettings(next)
+        if (next.rack.count { it.isNotEmpty() } > 1 && !LinkController.enabled) LinkController.setTempo(next.rackTempo)
+        Toast.makeText(this, "Session loaded: ${session.name}", Toast.LENGTH_SHORT).show()
     }
 
     private fun updateSettings(newSettings: AppSettings) {

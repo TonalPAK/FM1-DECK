@@ -35,6 +35,10 @@ data class AppSettings(
     /** Each slot's own MASTER pot (the firmware's volume), 0..1023. */
     val rackMasters: List<Int> = List(RACK_SLOTS) { DEFAULT_MASTER_ADC },
     val rackFocus: Int = 0,
+    /** The key LEDs' colour (KeyLight id; "palette" = the palette's own). */
+    val keyLight: String = "palette",
+    /** Thin marks between every four white keys (the steps of a 16-step pattern). */
+    val keyBeatMarks: Boolean = true,
     /** Mute and solo, a bit per slot. */
     val rackMute: Int = 0,
     val rackSolo: Int = 0,

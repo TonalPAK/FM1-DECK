@@ -31,12 +31,15 @@ import io.github.fm1deck.APP_EDIT_REVISION
 import io.github.fm1deck.engine.MasterPreset
 import io.github.fm1deck.engine.NativeBridge
 import io.github.fm1deck.settings.AppSettings
+import io.github.fm1deck.settings.Session
+import io.github.fm1deck.ui.panel.skin.KeyLight
 import io.github.fm1deck.ui.panel.SkinLayout
 import io.github.fm1deck.ui.panel.skin.BlockId
 import io.github.fm1deck.ui.panel.skin.Palette
 import io.github.fm1deck.ui.panel.skin.Skin
 
 enum class SettingsTab(val title: String) {
+    SESSION("Session"),
     SKIN("Skin"),
     FIRMWARE("Firmware"),
     AUDIO("Audio"),
@@ -56,9 +59,14 @@ fun SettingsScreen(
     builtInMasterPresets: List<MasterPreset> = emptyList(),
     userMasterPresets: List<MasterPreset> = emptyList(),
     onSaveMasterPreset: (MasterPreset) -> Unit = {},
+    sessions: List<Session> = emptyList(),
+    suggestedSessionName: String = "SESSION 01",
+    onSaveSession: (String) -> Unit = {},
+    onLoadSession: (Session) -> Unit = {},
+    onDeleteSession: (Session) -> Unit = {},
     onClose: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(SettingsTab.SKIN) }
+    var selectedTab by remember { mutableStateOf(SettingsTab.SESSION) }
     val context = LocalContext.current
 
     val openDocumentLauncher = rememberLauncherForActivityResult(
@@ -84,6 +92,14 @@ fun SettingsScreen(
 
     val tabContent: @Composable () -> Unit = {
         when (selectedTab) {
+            SettingsTab.SESSION -> SessionTab(
+                settings = currentSettings,
+                sessions = sessions,
+                suggestedName = suggestedSessionName,
+                onSave = onSaveSession,
+                onLoad = onLoadSession,
+                onDelete = onDeleteSession
+            )
             SettingsTab.SKIN -> SkinSettingsTab(
                 settings = currentSettings,
                 onSettingsChanged = onSettingsChanged,
@@ -276,6 +292,7 @@ private fun PortraitSettings(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SkinSettingsTab(
     settings: AppSettings,
@@ -417,6 +434,46 @@ private fun SkinSettingsTab(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text("Pixelated screen scaling (nearest-neighbour)", color = Color.White, fontSize = 12.sp)
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // The key LEDs' colour: the palette's white, or one that stands out on the grey keybed
+        Text("KEY LIGHT", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            KeyLight.COLORS.forEach { (id, c) ->
+                val selected = settings.keyLight == id
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(Color(0xFF1F1F1F))
+                        .border(if (selected) 2.dp else 1.dp, if (selected) Color.White else Color(0xFF3A3A3A), RoundedCornerShape(17.dp))
+                        .clickable { onSettingsChanged(settings.copy(keyLight = id)) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // A key's slit in that colour (the palette's: its warm white)
+                    Box(
+                        Modifier
+                            .size(width = 6.dp, height = 18.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(c ?: Color(0xFFF2EBDD))
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(
+                checked = settings.keyBeatMarks,
+                onCheckedChange = { onSettingsChanged(settings.copy(keyBeatMarks = it)) },
+                colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF6FA8DC))
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text("Beat marks on the keys (every 4 white keys)", color = Color.White, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))

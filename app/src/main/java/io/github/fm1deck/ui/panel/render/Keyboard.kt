@@ -35,10 +35,12 @@ object KeyboardRenderer {
         heldKeysMask: Int,
         u: Float,
         textMeasurer: TextMeasurer? = null,
-        hintDrawer: ((DrawScope, PanelElement.Key) -> Unit)? = null
+        hintDrawer: ((DrawScope, PanelElement.Key) -> Unit)? = null,
+        beatMarks: Boolean = false
     ) {
         val r = keyboardRect.height * 0.07f
         PanelStyle.drawTray(scope, keyboardRect, r, palette)
+        if (beatMarks) drawBeatMarks(scope, keys, palette, u)
         val breathPeak = if ((panelState.leds.getOrElse(7) { 0 }) != 0) 0.75f else 1f
         for (i in keys.indices) {
             drawKey(scope, keys[i], palette, panelState, heldKeysMask, u, breathPeak, hintDrawer)
@@ -100,6 +102,28 @@ object KeyboardRenderer {
         hintDrawer?.invoke(scope, key)
     }
 
+    /** A key that is a white one on a piano: the 16 of them are a 16-step pattern's steps on these firmwares. */
+    private fun isWhite(bit: Int): Boolean = !NOTE_NAMES[bit % 12].endsWith("♯")
+
+    /**
+     * Thin marks in the gaps after every fourth white key (steps 4 | 5, 8 | 9, 12 | 13), down the white row: the
+     * beats of a running pattern, read at a glance.
+     */
+    private fun drawBeatMarks(scope: DrawScope, keys: List<PanelElement.Key>, palette: Palette, u: Float) {
+        val whites = keys.filter { isWhite(it.bit) }.sortedBy { it.capsuleRect.left }
+        val color = palette.buttonLabelDim.copy(alpha = 0.55f)
+        var i = 4
+        while (i < whites.size) {
+            val a = whites[i - 1].capsuleRect
+            val b = whites[i].capsuleRect
+            val x = (a.right + b.left) / 2f
+            val top = minOf(a.top, b.top) + a.height * 0.12f
+            val bottom = maxOf(a.bottom, b.bottom) - a.height * 0.12f
+            scope.drawLine(color, Offset(x, top), Offset(x, bottom), strokeWidth = maxOf(1f, 0.9f * u))
+            i += 4
+        }
+    }
+
     private fun drawNoteName(
         scope: DrawScope,
         textMeasurer: TextMeasurer,
@@ -110,7 +134,8 @@ object KeyboardRenderer {
     ) {
         val held = (heldKeysMask and (1 shl key.bit)) != 0
         val color = when {
-            held || panelState.isKeyLit(key.bit) -> palette.ledLit
+            held -> palette.ledLit
+            panelState.isKeyLit(key.bit) -> palette.keyLit
             panelState.isKeyBreathing(key.bit) ->
                 lerpColor(palette.keySlitDim, palette.buttonLabel, panelState.breathLevel)
             panelState.isKeyDim(key.bit) || panelState.isKeyMid(key.bit) -> palette.buttonLabel

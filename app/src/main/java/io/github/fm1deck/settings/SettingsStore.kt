@@ -59,7 +59,9 @@ object SettingsStore {
                 rack = rack, rackMasters = masters, rackFocus = root.optInt("rackFocus", 0),
                 rackTempo = root.optDouble("rackTempo", 120.0).coerceIn(20.0, 999.0),
                 rackMute = root.optInt("rackMute", 0),
-                rackSolo = root.optInt("rackSolo", 0)
+                rackSolo = root.optInt("rackSolo", 0),
+                keyLight = root.optString("keyLight", "palette"),
+                keyBeatMarks = root.optBoolean("keyBeatMarks", true)
             ).normalized(known)
         }
     }
@@ -96,6 +98,8 @@ object SettingsStore {
         root.put("rackTempo", settings.rackTempo)
         root.put("rackMute", settings.rackMute)
         root.put("rackSolo", settings.rackSolo)
+        root.put("keyLight", settings.keyLight)
+        root.put("keyBeatMarks", settings.keyBeatMarks)
         return root.toString(2)
     }
 

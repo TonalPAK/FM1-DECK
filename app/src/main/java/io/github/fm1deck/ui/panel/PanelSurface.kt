@@ -90,7 +90,7 @@ fun PanelSurface(
     val settingsNow by rememberUpdatedState(settings)
 
     // Another rack slot took the panel: nothing stays held or latched, MASTER shows that slot's pot
-    LaunchedEffect(settings.rackFocus) {
+    LaunchedEffect(settings.rackFocus, settings.activeFwId) {
         fnOn = false
         latchedMask = 0
         heldButtonsMask = 0
@@ -379,7 +379,8 @@ fun PanelSurface(
             heldKeysMask = heldKeysMask,
             u = u,
             textMeasurer = textMeasurer,
-            hintDrawer = null // Hook for P4
+            hintDrawer = null, // Hook for P4
+            beatMarks = settings.keyBeatMarks
         )
 
         // 5. Settings: a small dot in the top-left corner; green while Ableton Link is on. Under it the DSP meter.
