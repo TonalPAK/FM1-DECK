@@ -52,7 +52,7 @@ fun AudioTab(quality: Int, onQuality: (Int) -> Unit) {
     val rate = info.getOrElse(0) { 48000 }.coerceAtLeast(1)
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(if (LocalSettingsCompact.current) 2.dp else 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text("Quality", color = Color(0xFFD6D6D8), fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -104,7 +104,7 @@ fun AudioTab(quality: Int, onQuality: (Int) -> Unit) {
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row {
-        Text(label, color = Color(0xFF8A8A8E), fontSize = 12.sp, modifier = Modifier.width(170.dp))
+        Text(label, color = Color(0xFF8A8A8E), fontSize = 12.sp, modifier = Modifier.width(if (LocalSettingsCompact.current) 128.dp else 170.dp))
         Text(value, color = Color(0xFFD6D6D8), fontSize = 12.sp)
     }
 }

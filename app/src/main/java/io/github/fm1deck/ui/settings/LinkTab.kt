@@ -8,6 +8,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +58,7 @@ private val LGreen = Color(0xFF5FE08A)
  * Settings → MIDI: Ableton Link (docs/LINK.md) — tempo, beat phase and start/stop shared with the other devices
  * on the same Wi-Fi. USB / BLE MIDI follow in P9.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LinkTab(quantum: Int, onQuantumChanged: (Int) -> Unit) {
     val context = LocalContext.current
@@ -85,7 +88,7 @@ fun LinkTab(quantum: Int, onQuantumChanged: (Int) -> Unit) {
                 LinkController.setEnabled(context, !st.enabled)
                 st = LinkController.status()
             }
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(peersText(st), color = if (st.enabled && st.peers > 0) LGreen else LLabel, fontSize = 13.sp)
                 Text(
                     if (st.enabled) "Same Wi-Fi as the other phone; Link on there too."
@@ -95,17 +98,15 @@ fun LinkTab(quantum: Int, onQuantumChanged: (Int) -> Unit) {
             }
         }
 
-        // ---- tempo, beat, transport ---------------------------------------------------------------------------
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(LCard)
-                .border(1.dp, Color(0xFF2C2C2E), RoundedCornerShape(10.dp))
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        // ---- tempo, beat, transport (upright: the beat and PLAY on a second line) -----------------------------
+        val compact = LocalSettingsCompact.current
+        val card = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(LCard)
+            .border(1.dp, Color(0xFF2C2C2E), RoundedCornerShape(10.dp))
+            .padding(12.dp)
+        val tempo: @Composable () -> Unit = {
             LinkPill("−1", false) { LinkController.setTempo(st.tempo - 1.0) }
             TempoReadout(st, enabled = st.enabled)
             LinkPill("+1", false) { LinkController.setTempo(st.tempo + 1.0) }
@@ -119,16 +120,41 @@ fun LinkTab(quantum: Int, onQuantumChanged: (Int) -> Unit) {
                     LinkController.setTempo(60e9 / avgNs)
                 }
             }
-            Spacer(Modifier.weight(1f))
+        }
+        val transport: @Composable () -> Unit = {
             BeatLights(st)
             LinkPill(if (st.playing) "STOP" else "PLAY", st.playing) { LinkController.togglePlay() }
         }
+        if (compact) {
+            Column(modifier = card, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) { tempo() }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) { transport() }
+            }
+        } else {
+            Row(modifier = card, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                tempo()
+                Spacer(Modifier.weight(1f))
+                transport()
+            }
+        }
 
         // ---- quantum --------------------------------------------------------------------------------------------
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Start on", color = LLabel, fontSize = 12.sp, modifier = Modifier.width(80.dp))
+        val quanta: @Composable () -> Unit = {
             for ((q, name) in listOf(1 to "beat", 2 to "2 beats", 4 to "bar", 8 to "2 bars")) {
                 LinkPill(name, quantum == q) { onQuantumChanged(q); LinkController.setQuantum(q) }
+            }
+        }
+        if (compact) {
+            Text("Start on", color = LLabel, fontSize = 12.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { quanta() }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Start on", color = LLabel, fontSize = 12.sp, modifier = Modifier.width(80.dp))
+                quanta()
             }
         }
 

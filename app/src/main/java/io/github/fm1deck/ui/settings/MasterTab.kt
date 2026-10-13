@@ -9,6 +9,8 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -123,6 +125,7 @@ private const val HIST = 2048
  * then two halves — the signal scope with meters on the left, the effect chain and the selected stage's controls
  * (two per row) on the right. The scope can be switched off; it runs only while this tab is shown.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MasterTab(
     initialValues: Map<String, Float>,
@@ -191,17 +194,18 @@ fun MasterTab(
         }
     }
 
+    val compact = LocalSettingsCompact.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = if (compact) 0.dp else 12.dp, vertical = if (compact) 0.dp else 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // ---- header ----------------------------------------------------------------------------------------------
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // ---- header (upright: wraps onto a second line) --------------------------------------------------------
+        val header: @Composable () -> Unit = {
             Pill("BYPASS", values["BYPASS"] == 1f, warn = true) { set("BYPASS", if (values["BYPASS"] == 1f) 0f else 1f, true) }
             Pill("AUTO-GAIN", values["AUTO_GAIN"] == 1f) { set("AUTO_GAIN", if (values["AUTO_GAIN"] == 1f) 0f else 1f, true) }
-            Spacer(Modifier.width(4.dp))
+            if (!compact) Spacer(Modifier.width(4.dp))
             for (slot in listOf("A", "B")) {
                 Pill(slot, activeSlot == slot) {
                     if (activeSlot != slot) {
@@ -211,7 +215,7 @@ fun MasterTab(
                     }
                 }
             }
-            Spacer(Modifier.width(4.dp))
+            if (!compact) Spacer(Modifier.width(4.dp))
             PresetMenu(
                 current = preset,
                 presets = builtInPresets + userPresets,
@@ -222,17 +226,22 @@ fun MasterTab(
                     onCommit(values.toMap(), preset)
                 }
             )
-            Spacer(Modifier.weight(1f))
+            if (!compact) Spacer(Modifier.weight(1f))
             Pill("SCOPE", scopeOn) { onScopeChanged(!scopeOn) }
         }
+        if (compact) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) { header() }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { header() }
+        }
 
-        // ---- two halves -------------------------------------------------------------------------------------------
-        Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // left: what happens to the signal
+        // left: what happens to the signal
+        val signal: @Composable (Modifier) -> Unit = { mod ->
             Column(
-                modifier = Modifier
-                    .weight(0.47f)
-                    .fillMaxHeight()
+                modifier = mod
                     .clip(RoundedCornerShape(10.dp))
                     .background(Tray)
                     .padding(8.dp),
@@ -259,15 +268,24 @@ fun MasterTab(
                 }
                 MeterBlock(meters)
             }
-
-            // right: the chain and the selected stage
-            Column(
-                modifier = Modifier.weight(0.53f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+        }
+        // right: the chain and the selected stage
+        val chain: @Composable (Modifier) -> Unit = { mod ->
+            Column(modifier = mod, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ChainStrip(selected, values, meters, onSelect = { selected = it })
                 val stage = CHAIN.first { it.group == selected }
                 StagePage(stage, table, values, meters, ::set)
+            }
+        }
+
+        // ---- two halves: side by side, or stacked when upright -----------------------------------------------------
+        if (compact) {
+            signal(Modifier.weight(0.42f).fillMaxWidth())
+            chain(Modifier.weight(0.58f).fillMaxWidth())
+        } else {
+            Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                signal(Modifier.weight(0.47f).fillMaxHeight())
+                chain(Modifier.weight(0.53f).fillMaxHeight())
             }
         }
     }

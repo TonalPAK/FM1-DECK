@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,11 +82,59 @@ fun SettingsScreen(
         }
     }
 
-    Box(
+    val tabContent: @Composable () -> Unit = {
+        when (selectedTab) {
+            SettingsTab.SKIN -> SkinSettingsTab(
+                settings = currentSettings,
+                onSettingsChanged = onSettingsChanged,
+                availableSkins = availableSkins,
+                availablePalettes = availablePalettes,
+                onImportClick = { openDocumentLauncher.launch(arrayOf("application/json", "*/*")) }
+            )
+            SettingsTab.FIRMWARE -> FirmwareSettingsTab(
+                settings = currentSettings,
+                onSettingsChanged = onSettingsChanged
+            )
+            SettingsTab.AUDIO -> AudioTab(
+                quality = currentSettings.quality,
+                onQuality = { q ->
+                    NativeBridge.nativeMasterSetQuality(q)
+                    onSettingsChanged(currentSettings.copy(quality = q))
+                }
+            )
+            SettingsTab.MASTER -> MasterTab(
+                initialValues = currentSettings.masterValues,
+                presetName = currentSettings.masterPreset,
+                builtInPresets = builtInMasterPresets,
+                userPresets = userMasterPresets,
+                scopeOn = currentSettings.masterScope,
+                onScopeChanged = { onSettingsChanged(currentSettings.copy(masterScope = it)) },
+                onCommit = { values, name ->
+                    onSettingsChanged(currentSettings.copy(masterValues = values, masterPreset = name))
+                },
+                onSaveUserPreset = onSaveMasterPreset
+            )
+            SettingsTab.MIDI -> LinkTab(
+                quantum = currentSettings.linkQuantum,
+                onQuantumChanged = { onSettingsChanged(currentSettings.copy(linkQuantum = it)) }
+            )
+            SettingsTab.RECORDER -> PlaceholderTab("WAV live audio recording", "coming in P8")
+            SettingsTab.ABOUT -> AboutTab()
+        }
+    }
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF161616))
     ) {
+        // Portrait (the gamepad skin): the tabs go to a scrolling strip on top, the content gets the full width
+        if (maxHeight > maxWidth) {
+            CompositionLocalProvider(LocalSettingsCompact provides true) {
+                PortraitSettings(selectedTab, { selectedTab = it }, onClose, tabContent)
+            }
+            return@BoxWithConstraints
+        }
         Row(modifier = Modifier.fillMaxSize()) {
             // Left rail with tabs
             Column(
@@ -146,45 +195,83 @@ fun SettingsScreen(
                     .fillMaxHeight()
                     .padding(20.dp)
             ) {
-                when (selectedTab) {
-                    SettingsTab.SKIN -> SkinSettingsTab(
-                        settings = currentSettings,
-                        onSettingsChanged = onSettingsChanged,
-                        availableSkins = availableSkins,
-                        availablePalettes = availablePalettes,
-                        onImportClick = { openDocumentLauncher.launch(arrayOf("application/json", "*/*")) }
-                    )
-                    SettingsTab.FIRMWARE -> FirmwareSettingsTab(
-                        settings = currentSettings,
-                        onSettingsChanged = onSettingsChanged
-                    )
-                    SettingsTab.AUDIO -> AudioTab(
-                        quality = currentSettings.quality,
-                        onQuality = { q ->
-                            NativeBridge.nativeMasterSetQuality(q)
-                            onSettingsChanged(currentSettings.copy(quality = q))
-                        }
-                    )
-                    SettingsTab.MASTER -> MasterTab(
-                        initialValues = currentSettings.masterValues,
-                        presetName = currentSettings.masterPreset,
-                        builtInPresets = builtInMasterPresets,
-                        userPresets = userMasterPresets,
-                        scopeOn = currentSettings.masterScope,
-                        onScopeChanged = { onSettingsChanged(currentSettings.copy(masterScope = it)) },
-                        onCommit = { values, name ->
-                            onSettingsChanged(currentSettings.copy(masterValues = values, masterPreset = name))
-                        },
-                        onSaveUserPreset = onSaveMasterPreset
-                    )
-                    SettingsTab.MIDI -> LinkTab(
-                        quantum = currentSettings.linkQuantum,
-                        onQuantumChanged = { onSettingsChanged(currentSettings.copy(linkQuantum = it)) }
-                    )
-                    SettingsTab.RECORDER -> PlaceholderTab("WAV live audio recording", "coming in P8")
-                    SettingsTab.ABOUT -> AboutTab()
+                tabContent()
+            }
+        }
+    }
+}
+
+/** True while Settings is laid out for a phone held upright: tabs pick their narrow arrangement. */
+val LocalSettingsCompact = staticCompositionLocalOf { false }
+
+@Composable
+private fun PortraitSettings(
+    selectedTab: SettingsTab,
+    onSelect: (SettingsTab) -> Unit,
+    onClose: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("SETTINGS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF333333))
+                        .clickable(onClick = onClose)
+                        .padding(horizontal = 18.dp, vertical = 9.dp)
+                ) {
+                    Text("Close", color = Color.White, fontSize = 12.sp)
                 }
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 6.dp)
+            ) {
+                SettingsTab.entries.forEach { tab ->
+                    val isSelected = selectedTab == tab
+                    Column(
+                        modifier = Modifier
+                            .clickable { onSelect(tab) }
+                            .padding(horizontal = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = tab.title,
+                            color = if (isSelected) Color(0xFF6FA8DC) else Color(0xFFCCCCCC),
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(vertical = 11.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(28.dp)
+                                .height(2.dp)
+                                .background(if (isSelected) Color(0xFF6FA8DC) else Color.Transparent)
+                        )
+                    }
+                }
+            }
+            HorizontalDivider(color = Color(0xFF2C2C2C), thickness = 1.dp)
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            content()
         }
     }
 }
@@ -198,6 +285,7 @@ private fun SkinSettingsTab(
     onImportClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val perRow = if (LocalSettingsCompact.current) 2 else 3
 
     Column(
         modifier = Modifier
@@ -207,8 +295,8 @@ private fun SkinSettingsTab(
         Text("PANEL LAYOUT", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Skin thumbnails: a grid of three per row, each a schematic of the real layout
-        availableSkins.chunked(3).forEach { rowSkins ->
+        // Skin thumbnails: a grid of three per row (two upright), each a schematic of the real layout
+        availableSkins.chunked(perRow).forEach { rowSkins ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -245,7 +333,7 @@ private fun SkinSettingsTab(
                         )
                     }
                 }
-                repeat(3 - rowSkins.size) { Spacer(modifier = Modifier.weight(1f)) }
+                repeat(perRow - rowSkins.size) { Spacer(modifier = Modifier.weight(1f)) }
             }
             Spacer(modifier = Modifier.height(10.dp))
         }
