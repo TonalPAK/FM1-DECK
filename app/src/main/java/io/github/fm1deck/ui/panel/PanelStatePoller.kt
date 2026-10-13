@@ -31,8 +31,10 @@ fun rememberPanelState(active: Boolean = true): PanelState {
 
         val ledsBuffer = IntArray(8)
         var lastScreenFrame = 0
-        val uiStateInts = IntArray(16)
-        val uiStateLabels = Array<String?>(4) { null }
+        // JniFirmware nativeUiState: ints = layer, layer_raw, page, flags, knob_valid, values[4], min[4], max[4];
+        // labels = page title, KNOB 1..4. Shorter arrays are left untouched there.
+        val uiStateInts = IntArray(17)
+        val uiStateLabels = Array<String?>(5) { null }
 
         while (true) {
             withFrameNanos { frameNanos ->
@@ -63,15 +65,13 @@ fun rememberPanelState(active: Boolean = true): PanelState {
                 }.getOrDefault(false)
 
                 if (hasUi) {
-                    val layer = uiStateInts[0]
-                    val page = uiStateInts[1]
-                    val labels = uiStateLabels.map { it ?: "" }
-                    state.fwUiState = FwUiState(
-                        layer = layer,
-                        page = page,
-                        pageTitle = "",
-                        knobLabels = labels
+                    val next = FwUiState(
+                        layer = uiStateInts[0],
+                        page = uiStateInts[2],
+                        pageTitle = uiStateLabels[0] ?: "",
+                        knobLabels = (1..4).map { uiStateLabels[it] ?: "" }
                     )
+                    if (next != state.fwUiState) state.fwUiState = next
                 } else if (state.fwUiState != null) {
                     state.fwUiState = null
                 }
