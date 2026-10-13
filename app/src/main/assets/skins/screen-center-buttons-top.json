@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "screen-center-buttons-top",
+  "order": 6,
+  "name": { "en": "Screen in the middle, buttons on top" },
+  "reference": "skin-6.png",
+  "panel": {
+    "padding": [18, 14, 18, 8],
+    "gap": 8,
+    "keyboardFraction": 0.36,
+    "minKeyboardDp": 112,
+    "top": { "type": "row", "gap": 14, "children": [
+      { "block": "system", "weight": 0.26 },
+      { "block": "screen", "weight": 0.31, "align": "center" },
+      { "type": "column", "weight": 0.43, "gap": 10, "children": [
+        { "block": "buttons", "weight": 0.56 },
+        { "block": "knobs", "weight": 0.44 }
+      ]}
+    ]}
+  },
+  "frames": { "system": false, "buttons": false, "knobs": false, "screen": false },
+  "separators": ["buttons/knobs"],
+  "palette": "graphite"
+}

@@ -1,0 +1,888 @@
+{
+  "schema": 1,
+  "firmware": "jiant",
+  "appliesTo": {
+    "versions": [
+      "v0.6.41"
+    ]
+  },
+  "lang": "en",
+  "source": {
+    "repo": "https://github.com/juanjiant-bit/JIANT",
+    "commit": "337232749c8ab304726b194e9a86b36b4a5932ae",
+    "file": "tools/gen_cheatsheets.py",
+    "extractor": "tools/overlay/extract_jiant_cheatsheet.py"
+  },
+  "license": "GPL-3.0-only (content from JIANT FM by juanjiant-bit)",
+  "layers": [
+    {
+      "id": "lfo",
+      "title": "LFO · MACROS",
+      "color": "#8b5cf6",
+      "trigger": {
+        "held": [
+          "LFO"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "NEW ROUTES"
+        },
+        "G3": {
+          "label": "CLEAR"
+        }
+      },
+      "knobs": [
+        "M1",
+        "M2",
+        "M3",
+        "M4"
+      ],
+      "note": "Knobs M1–M4; they stay latched when let go (LFO again: off). F3 rolls new routes, G3 clears them, SELECT rolls too (only tracks that sound)."
+    },
+    {
+      "id": "scl",
+      "title": "SCL · SCALE",
+      "color": "#22d3ee",
+      "trigger": {
+        "held": [
+          "SCL"
+        ]
+      },
+      "keys": {},
+      "knobs": [
+        "ROOT",
+        "SCL",
+        "OFS",
+        "PIT"
+      ],
+      "note": "Any key sets the ROOT. ROOT and SCALE are every melodic track's (and RESO's).",
+      "allKeys": {
+        "label": "ROOT {note}"
+      }
+    },
+    {
+      "id": "seq",
+      "title": "SEQ · TOOLS",
+      "color": "#ef4444",
+      "trigger": {
+        "held": [
+          "SEQ"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "CLEAR"
+        },
+        "G3": {
+          "label": "REVERSE"
+        },
+        "A3": {
+          "label": "SHIFT"
+        },
+        "B3": {
+          "label": "SHIFT"
+        },
+        "C4": {
+          "label": "RANDOM"
+        },
+        "D4": {
+          "label": "COOK"
+        },
+        "E4": {
+          "label": "BEAT"
+        },
+        "F4": {
+          "label": "CLR AUTO"
+        }
+      },
+      "knobs": [
+        "LEN",
+        "DIV",
+        "SWING",
+        "GATE"
+      ],
+      "note": "On the SEQ pages: F3 CLEAR · G3 REVERSE · A3 B3 SHIFT · C4 RANDOM · D4 COOK · E4 BEAT · F4 CLR AUTO (the automation)."
+    },
+    {
+      "id": "rec",
+      "title": "REC · RECORD",
+      "color": "#ef4444",
+      "trigger": {
+        "held": [
+          "REC"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "CLEAR"
+        },
+        "G3": {
+          "label": "CLICK"
+        }
+      },
+      "knobs": [
+        "CLICK",
+        "",
+        "",
+        ""
+      ],
+      "note": "F3 CLEAR the track (at once; GLO + G4 undoes it), G3 the metronome CLICK."
+    },
+    {
+      "id": "fx",
+      "title": "FX · PUNCH-IN EFFECTS",
+      "color": "#ff7a00",
+      "trigger": {
+        "held": [
+          "FX"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "REP 1/8"
+        },
+        "G3": {
+          "label": "REP 1/16"
+        },
+        "A3": {
+          "label": "REP 1/32"
+        },
+        "B3": {
+          "label": "LPF"
+        },
+        "C4": {
+          "label": "HPF"
+        },
+        "D4": {
+          "label": "OCT-"
+        },
+        "E4": {
+          "label": "OCT+"
+        },
+        "F4": {
+          "label": "½ TEMPO"
+        },
+        "G4": {
+          "label": "DEC-"
+        },
+        "A4": {
+          "label": "DEC+"
+        },
+        "B4": {
+          "label": "STUT 1/8"
+        },
+        "C5": {
+          "label": "STUT 1/16"
+        },
+        "D5": {
+          "label": "ATK+"
+        },
+        "E5": {
+          "label": "ARP"
+        },
+        "F5": {
+          "label": "RAND"
+        },
+        "G5": {
+          "label": "ERASE"
+        },
+        "F#3": {
+          "label": "M1"
+        },
+        "G#3": {
+          "label": "M2"
+        },
+        "A#3": {
+          "label": "M3"
+        },
+        "C#4": {
+          "label": "M4"
+        },
+        "D#4": {
+          "label": "M5"
+        },
+        "F#4": {
+          "label": "M6"
+        },
+        "A#4": {
+          "label": "TGT"
+        }
+      },
+      "knobs": [
+        "FILTER",
+        "CRUSH",
+        "THROW",
+        "DEPTH"
+      ],
+      "note": "Act while held, in on the next 1/16. Black 1–6 mute T1–T6, A#4 picks which tracks the MIDI ones touch (all · synths · drums). With REC armed and playing they record into the section's lane; G5 erases it."
+    },
+    {
+      "id": "glo",
+      "title": "GLO · MIX",
+      "color": "#3b82f6",
+      "trigger": {
+        "held": [
+          "GLO"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "SOLO 1"
+        },
+        "G3": {
+          "label": "SOLO 2"
+        },
+        "A3": {
+          "label": "SOLO 3"
+        },
+        "B3": {
+          "label": "SOLO 4"
+        },
+        "C4": {
+          "label": "SOLO 5"
+        },
+        "D4": {
+          "label": "SOLO 6"
+        },
+        "E4": {
+          "label": "ALL"
+        },
+        "F4": {
+          "label": "TAP"
+        },
+        "G4": {
+          "label": "UNDO"
+        },
+        "F#3": {
+          "label": "M1"
+        },
+        "G#3": {
+          "label": "M2"
+        },
+        "A#3": {
+          "label": "M3"
+        },
+        "C#4": {
+          "label": "M4"
+        },
+        "D#4": {
+          "label": "M5"
+        },
+        "F#4": {
+          "label": "M6"
+        },
+        "G#4": {
+          "label": "KICK"
+        },
+        "A#4": {
+          "label": "SNR"
+        },
+        "C#5": {
+          "label": "HAT"
+        },
+        "D#5": {
+          "label": "PERC"
+        }
+      },
+      "knobs": [
+        "LEVEL T1",
+        "LEVEL T2",
+        "LEVEL T3",
+        "LEVEL T4"
+      ],
+      "note": "Black 1–6 mute T1–T6 (latched), 7–10 the DRUM-X groups. White: solo while held, E4 unmutes all, F4 tap tempo, G4 UNDO the last big change (again: redo). SELECT: the tempo. PLAY: restart.  T5 or T6 selected: the knobs are T3–T6."
+    },
+    {
+      "id": "save",
+      "title": "SAVE · SONG",
+      "color": "#facc15",
+      "trigger": {
+        "held": [
+          "SAVE"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "PLAY A"
+        },
+        "G3": {
+          "label": "PLAY B"
+        },
+        "A3": {
+          "label": "PLAY C"
+        },
+        "B3": {
+          "label": "PLAY D"
+        },
+        "C4": {
+          "label": "STORE A"
+        },
+        "D4": {
+          "label": "STORE B"
+        },
+        "E4": {
+          "label": "STORE C"
+        },
+        "F4": {
+          "label": "STORE D"
+        },
+        "D5": {
+          "label": "LOOP/ SONG"
+        },
+        "E5": {
+          "label": "SONG REC"
+        },
+        "G5": {
+          "label": "SONG"
+        }
+      },
+      "knobs": [
+        "SONG 1–8",
+        "",
+        "",
+        ""
+      ],
+      "note": "PLAY A–D on the next bar (several in one hold: a quick chain), STORE the section into A–D. OCT+ stores the playing section, OCT- recalls it. On the SONG page KNOB 4 stores a scene."
+    },
+    {
+      "id": "edit",
+      "title": "EDIT · SOUND",
+      "color": "#d946ef",
+      "trigger": {
+        "held": [
+          "EDIT"
+        ]
+      },
+      "keys": {
+        "F3": {
+          "label": "INIT"
+        },
+        "G3": {
+          "label": "RECALL"
+        },
+        "F#3": {
+          "label": "BD"
+        },
+        "G#3": {
+          "label": "SD"
+        },
+        "A#3": {
+          "label": "CP"
+        },
+        "C#4": {
+          "label": "CH"
+        },
+        "D#4": {
+          "label": "OH"
+        },
+        "F#4": {
+          "label": "TM"
+        },
+        "G#4": {
+          "label": "RS"
+        },
+        "A#4": {
+          "label": "CB"
+        }
+      },
+      "knobs": [
+        "EDIT 1",
+        "EDIT 2",
+        "EDIT 3",
+        "EDIT 4"
+      ],
+      "note": "INIT: the factory sound (DRUM: the kit too). RECALL: the sound stored in the section. On a DRUM track black 1–8 mute each DRUM-X sound."
+    }
+  ],
+  "combos": [
+    {
+      "held": [
+        "PAGE BUTTON"
+      ],
+      "press": [
+        "PRESETS"
+      ],
+      "text": "Jump through that button's pages."
+    },
+    {
+      "held": [
+        "REC"
+      ],
+      "press": [
+        "FX",
+        "EDIT",
+        "ENV",
+        "LFO",
+        "SCL",
+        "ARP",
+        "GLO"
+      ],
+      "text": "Clear that part's automation on the selected track (FX: the punch-in lane too)."
+    },
+    {
+      "held": [
+        "SEQ"
+      ],
+      "press": [
+        "REC"
+      ],
+      "text": "CLEAR ALL SEQUENCES? (OCT+ confirms)."
+    },
+    {
+      "held": [
+        "SAVE"
+      ],
+      "press": [
+        "OCT+",
+        "OCT-"
+      ],
+      "text": "Store / recall the playing section."
+    },
+    {
+      "held": [
+        "GLO"
+      ],
+      "press": [
+        "PLAY"
+      ],
+      "text": "Restart from the top."
+    },
+    {
+      "held": [
+        "GLO"
+      ],
+      "press": [
+        "SELECT"
+      ],
+      "text": "Tempo (from any page)."
+    },
+    {
+      "held": [
+        "STEP HELD"
+      ],
+      "press": [
+        "KNOB"
+      ],
+      "text": "A parameter lock on that step (roll, grid)."
+    },
+    {
+      "held": [
+        "HOME"
+      ],
+      "press": [],
+      "text": "MENU: knob accel, FX latch, hold time, USB level, palettes, animation…"
+    }
+  ],
+  "pages": [
+    {
+      "button": "ENV",
+      "taps": "ENV · ENV DEST",
+      "hold": "—"
+    },
+    {
+      "button": "LFO",
+      "taps": "LFO · LFO DEST · MOD · MSEQ · MSEQ 2",
+      "hold": "MACROS M1–M4 (stay latched)"
+    },
+    {
+      "button": "FX",
+      "taps": "TRACK · SLICER · DELAY · REVERB · CHORUS · MASTER (two quick taps: next section)",
+      "hold": "PUNCH-IN FX"
+    },
+    {
+      "button": "SCL",
+      "taps": "SCL · SCL 2",
+      "hold": "ROOT by key"
+    },
+    {
+      "button": "EDIT",
+      "taps": "EDIT 1 · EDIT 2 · FILTER · VOICE (FM6: OPERATOR · OP ENV · OPERATOR 2; DRUM: LANES · LANES 2 · SOUND 1–3 · X-MOD)",
+      "hold": "INIT · RECALL · sound mutes"
+    },
+    {
+      "button": "GLO",
+      "taps": "MIXER · GLOBAL · SYSTEM",
+      "hold": "MUTE · SOLO · LEVEL · TAP"
+    },
+    {
+      "button": "SAVE",
+      "taps": "PRESETS · USER · PROJECT · ARRANGE · TOOLS",
+      "hold": "SONG layer"
+    },
+    {
+      "button": "ARP",
+      "taps": "ARP · ARP 2",
+      "hold": "—"
+    },
+    {
+      "button": "SEQ",
+      "taps": "STEP · COMP · PATTERN · AUTOMATION · AUTO LIST · SHIFT",
+      "hold": "SEQ TOOLS"
+    },
+    {
+      "button": "REC",
+      "taps": "(transport)",
+      "hold": "CLEAR · CLICK"
+    }
+  ],
+  "panel": [
+    {
+      "control": "MASTER",
+      "text": "Master volume."
+    },
+    {
+      "control": "SELECT",
+      "text": "HOME: DICE EVERYTHING? (OCT+ yes): a new piece in one scale. EDIT: the sound's dice . GLO's pages or GLO held: the tempo. Macros open (LFO held or latched): new random routes."
+    },
+    {
+      "control": "PRESETS",
+      "text": "Browses the sounds (factory and user). On step, list and song pages: the cursor / the row. Hold a page button + PRESETS: jump through its pages."
+    },
+    {
+      "control": "ALGORITHM",
+      "text": "Selects the track, T1–T6, from any page."
+    },
+    {
+      "control": "KNOB 1–4",
+      "text": "The four columns on screen. Fast sweeps the whole range, slow fine-tunes. With a layer held: the layer's."
+    },
+    {
+      "control": "OCT- · OCT+",
+      "text": "The keyboard's octave (both together: back to 0). On action pages and dialogs: back / confirm."
+    },
+    {
+      "control": "PLAY",
+      "text": "Start / stop. GLO + PLAY: restart from the top."
+    },
+    {
+      "control": "REC",
+      "text": "Arms live recording on the selected track (notes and knob moves, overdub)."
+    },
+    {
+      "control": "HOME",
+      "text": "Tap: the ecosystem. Hold: the MENU."
+    },
+    {
+      "control": "KEYS",
+      "text": "27 keys play the selected track in its scale; with a layer held they become that layer's."
+    }
+  ],
+  "knobPages": {
+    "ENV": [
+      "ATK",
+      "DEC",
+      "SUS",
+      "REL"
+    ],
+    "ENV DEST": [
+      "FILTER",
+      "PITCH",
+      "SHAPE",
+      "LOOP"
+    ],
+    "LFO": [
+      "RATE",
+      "WAVE",
+      "PHASE",
+      "FADE"
+    ],
+    "LFO DEST": [
+      "PITCH",
+      "FILTER",
+      "SHAPE",
+      "AMP"
+    ],
+    "MOD": [
+      "SLOT",
+      "SRC",
+      "DEST",
+      "AMT"
+    ],
+    "MSEQ": [
+      "STEP",
+      "LEVEL",
+      "LEN",
+      "SLEW"
+    ],
+    "MSEQ 2": [
+      "DIV",
+      "",
+      "",
+      ""
+    ],
+    "FX": [
+      "DIST",
+      "CHORUS",
+      "DLY",
+      "REV"
+    ],
+    "DIST": [
+      "DIST",
+      "TYPE",
+      "TONE",
+      ""
+    ],
+    "AUTOPAN": [
+      "DEPTH",
+      "RATE",
+      "SYNC",
+      "WAVE"
+    ],
+    "SLICER": [
+      "MODE",
+      "PAT",
+      "RATE",
+      "DEPTH"
+    ],
+    "SL BUS": [
+      "T1",
+      "T2",
+      "T3",
+      "T4"
+    ],
+    "SL BUS 2": [
+      "T5",
+      "T6",
+      "FX",
+      ""
+    ],
+    "SL PITCH": [
+      "STEP",
+      "PITCH",
+      "LEN",
+      "QUANT"
+    ],
+    "DLY": [
+      "TIME",
+      "FEEDBK",
+      "TONE",
+      "MIX"
+    ],
+    "DLY 2": [
+      "WIDE",
+      "PITCH",
+      "SPRAY",
+      ""
+    ],
+    "REVERB": [
+      "TYPE",
+      "SIZE",
+      "DAMP",
+      "PRE/AIR"
+    ],
+    "REVERB 2": [
+      "MOD",
+      "RATE",
+      "FILT",
+      "WIDE"
+    ],
+    "CHORUS": [
+      "RATE",
+      "DEPTH",
+      "STEREO",
+      ""
+    ],
+    "MASTER": [
+      "CLIP",
+      "PUNCH",
+      "DUCK",
+      "REL"
+    ],
+    "EDIT 1": [
+      "E1",
+      "E2",
+      "E3",
+      "E4"
+    ],
+    "EDIT 2": [
+      "E5",
+      "E6",
+      "E7",
+      "E8"
+    ],
+    "RETRIG": [
+      "RTRG",
+      "",
+      "",
+      ""
+    ],
+    "OPERATOR": [
+      "OP",
+      "RATIO",
+      "FINE",
+      "LEVEL"
+    ],
+    "OP ENV": [
+      "OP",
+      "STAGE",
+      "RATE",
+      "LEVEL"
+    ],
+    "OPERATOR 2": [
+      "OP",
+      "MODE",
+      "DETUNE",
+      "VEL"
+    ],
+    "FILTER": [
+      "TYPE",
+      "CUT",
+      "RES",
+      "DRIVE"
+    ],
+    "VOICE": [
+      "VOICE",
+      "GLIDE",
+      "MODE",
+      "PRIO"
+    ],
+    "LANES": [
+      "KICK",
+      "SNARE",
+      "CLAP",
+      "HATCL"
+    ],
+    "LANES 2": [
+      "HATOP",
+      "TOM",
+      "RIM",
+      "BELL"
+    ],
+    "SOUND": [
+      "LANE",
+      "SIDE",
+      "PITCH",
+      "PMOD"
+    ],
+    "SOUND 2": [
+      "DECAY",
+      "NOISE",
+      "COLOR",
+      "MODE"
+    ],
+    "SOUND 3": [
+      "LANE",
+      "PMOD",
+      "DRIVE",
+      "WAVE"
+    ],
+    "X-MOD": [
+      "RATE",
+      "DEPTH",
+      "SHAPE",
+      "RAND"
+    ],
+    "SCL": [
+      "ROOT",
+      "SCALE",
+      "QUANT",
+      "TRANS"
+    ],
+    "SCL 2": [
+      "STRN",
+      "",
+      "",
+      ""
+    ],
+    "ARP": [
+      "MODE",
+      "RATE",
+      "OCT",
+      "GATE"
+    ],
+    "ARP 2": [
+      "SWING",
+      "PROB",
+      "HOLD",
+      "ORDER"
+    ],
+    "STEP": [
+      "STEP",
+      "NOTE",
+      "TIME",
+      "FLAG"
+    ],
+    "STEP · DRUM": [
+      "STEP",
+      "LANE",
+      "HIT",
+      "ACC"
+    ],
+    "COMP": [
+      "STEP",
+      "TYPE",
+      "VAL",
+      "VAL"
+    ],
+    "PATTERN": [
+      "LEN",
+      "DIV",
+      "SWING",
+      "GATE"
+    ],
+    "AUTOMATION": [
+      "PLAY",
+      "EVENT",
+      "LOCK",
+      "CLEAR"
+    ],
+    "AUTO LIST": [
+      "ROW",
+      "STEP",
+      "PARAM",
+      "VALUE"
+    ],
+    "SHIFT": [
+      "OFFSET",
+      "PITCH",
+      "CHANCE",
+      ""
+    ],
+    "MIXER": [
+      "LEVEL",
+      "PAN",
+      "REV",
+      "MUTE"
+    ],
+    "GLOBAL": [
+      "BPM",
+      "SWING",
+      "CLOCK",
+      "TUNE"
+    ],
+    "SYSTEM": [
+      "TRACKS",
+      "LOAD",
+      "ROUTE",
+      "CPU"
+    ],
+    "PRESETS": [
+      "No.",
+      "ENG",
+      "FAV",
+      "LIST"
+    ],
+    "USER": [
+      "SLOT",
+      "LOAD",
+      "ERASE",
+      "SAVE"
+    ],
+    "PROJECT": [
+      "PROJ",
+      "SECT",
+      "LOAD",
+      "SAVE"
+    ],
+    "ARRANGE": [
+      "ROW",
+      "SECT",
+      "BARS",
+      "SCENE"
+    ],
+    "TOOLS": {
+      "text": "CLEAR SEQ · INIT SOUND · DEL ROW · CLEAR SONG · INIT SYSTEM: K1 picks, OCT+"
+    }
+  }
+}

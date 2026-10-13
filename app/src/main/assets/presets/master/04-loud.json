@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Loud",
+  "values": {
+    "SAT_DRIVE": 8,
+    "SPC_CEILING": -3,
+    "SPC_SPREAD": 0.7,
+    "SPC_PEAK_MIX": 0.2,
+    "CLIP_POSITION": 1,
+    "LIM_CEILING": -0.2,
+    "LIM_TRUE_PEAK": 1
+  }
+}

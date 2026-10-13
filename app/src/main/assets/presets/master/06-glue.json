@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "Glue",
+  "values": {
+    "SAT_DRIVE": 3,
+    "SAT_DYNAMICS": 0.6,
+    "SAT_DYN_SPEED": 200,
+    "SPC_CEILING": -1.5,
+    "SPC_SPREAD": 0.5,
+    "LIM_AUTO_RELEASE": 1
+  }
+}

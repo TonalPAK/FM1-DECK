@@ -1,0 +1,15 @@
+[submodule "upstream/felucca"]
+	path = upstream/felucca
+	url = https://github.com/hugelton/Felucca.git
+	shallow = true
+[submodule "upstream/jiant"]
+	path = upstream/jiant
+	url = https://github.com/juanjiant-bit/JIANT.git
+	shallow = true
+[submodule "upstream/sloop"]
+	path = upstream/sloop
+	url = https://github.com/isod89/sloop-fm1.git
+	shallow = true
+[submodule "third_party/link"]
+	path = third_party/link
+	url = https://github.com/Ableton/link.git

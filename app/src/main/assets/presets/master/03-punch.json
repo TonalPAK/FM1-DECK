@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "Punch",
+  "values": {
+    "SAT_DRIVE": 4,
+    "SPC_CEILING": -2,
+    "SPC_SPREAD": 0.8,
+    "SPC_PEAK_MIX": 0.45,
+    "LIM_CEILING": -0.3,
+    "LIM_TRUE_PEAK": 1,
+    "LIM_RELEASE": 80,
+    "LIM_AUTO_RELEASE": 0
+  }
+}

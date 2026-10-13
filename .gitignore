@@ -1,0 +1,31 @@
+# Gradle / Android
+.gradle/
+.kotlin/
+build/
+app/build/
+app/.cxx/
+local.properties
+keystore.properties
+*.jks
+*.keystore
+captures/
+.externalNativeBuild/
+
+# IDE / agents state
+.idea/
+*.iml
+.vscode/
+.gemini/
+.claude/worktrees/
+.gitnexus/
+
+# Generated firmware headers, packs and test renders
+build/fwgen/
+out/packs/
+tools/**/__pycache__/
+*.wav
+!docs/**/*.wav
+
+# OS
+.DS_Store
+Thumbs.db

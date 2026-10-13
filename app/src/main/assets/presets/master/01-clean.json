@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "Clean",
+  "values": {
+    "SAT_ENABLE": 0,
+    "SPC_ENABLE": 0,
+    "CLIP_ENABLE": 0,
+    "LIM_ENABLE": 1,
+    "LIM_CEILING": -0.3,
+    "LIM_TRUE_PEAK": 1
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Crush",
+  "values": {
+    "SAT_DRIVE": 24,
+    "SAT_SHAPE": 0.1,
+    "SAT_SYMMETRY": 0.4,
+    "SAT_DYNAMICS": 0.8,
+    "SAT_TILT": 0.5,
+    "SPC_BANDS": 0,
+    "SPC_SPREAD": 0.3
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "screen-left-knobs-top",
+  "order": 4,
+  "name": { "en": "Screen left, knobs on top" },
+  "reference": "skin-4.png",
+  "panel": {
+    "padding": [18, 14, 18, 8],
+    "gap": 8,
+    "keyboardFraction": 0.36,
+    "minKeyboardDp": 112,
+    "top": { "type": "row", "gap": 16, "children": [
+      { "block": "screen", "weight": 0.31, "align": "center" },
+      { "type": "column", "weight": 0.43, "gap": 10, "children": [
+        { "block": "knobs", "weight": 0.40 },
+        { "block": "buttons", "weight": 0.60 }
+      ]},
+      { "block": "system", "weight": 0.26 }
+    ]}
+  },
+  "frames": { "system": false, "buttons": false, "knobs": false, "screen": false },
+  "separators": [],
+  "palette": "graphite"
+}

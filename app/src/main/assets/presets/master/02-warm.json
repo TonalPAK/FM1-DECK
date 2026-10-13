@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "Warm",
+  "values": {
+    "SAT_DRIVE": 6,
+    "SAT_SHAPE": 0.7,
+    "SAT_SYMMETRY": 0.15,
+    "SAT_DYNAMICS": 0.3,
+    "SPC_ENABLE": 0,
+    "LIM_CEILING": -0.5
+  }
+}

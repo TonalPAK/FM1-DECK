@@ -1,0 +1,14 @@
+{
+  "_comment": "Hand-written additions merged after extract_jiant_cheatsheet.py. Keep tiny; re-check on every JIANT update. Source: JIANT README / cheat sheet prose.",
+  "layers": {
+    "lfo": {
+      "keys": {
+        "F3": { "label": "NEW ROUTES" },
+        "G3": { "label": "CLEAR" }
+      }
+    },
+    "scl": {
+      "allKeys": { "label": "ROOT {note}" }
+    }
+  }
+}

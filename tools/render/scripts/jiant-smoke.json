@@ -1,0 +1,17 @@
+{
+  "firmware": "jiant",
+  "seconds": 12,
+  "seed": 1,
+  "master": 700,
+  "events": [
+    { "ms": 1500, "buttons": ["PLAY"] },
+    { "ms": 1560, "buttons": [] },
+    { "ms": 2000, "keys": ["C4", "E4", "G4"] },
+    { "ms": 2400, "keys": [] },
+    { "ms": 3000, "enc": { "K1": 5 } },
+    { "ms": 4000, "enc": { "K2": -3, "SELECT": 1 } },
+    { "ms": 5000, "call": "test_heavy" },
+    { "ms": 6000, "buttons": ["PLAY"] },
+    { "ms": 6060, "buttons": [] }
+  ]
+}

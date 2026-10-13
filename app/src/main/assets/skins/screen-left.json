@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "screen-left",
+  "order": 3,
+  "name": { "en": "Screen left" },
+  "reference": "skin-3.png",
+  "panel": {
+    "padding": [18, 14, 18, 8],
+    "gap": 8,
+    "keyboardFraction": 0.36,
+    "minKeyboardDp": 112,
+    "top": { "type": "row", "gap": 16, "children": [
+      { "block": "screen", "weight": 0.31, "align": "center" },
+      { "type": "column", "weight": 0.43, "gap": 10, "children": [
+        { "block": "buttons", "weight": 0.56 },
+        { "block": "knobs", "weight": 0.44 }
+      ]},
+      { "block": "system", "weight": 0.26 }
+    ]}
+  },
+  "frames": { "system": false, "buttons": false, "knobs": false, "screen": false },
+  "separators": [],
+  "palette": "graphite"
+}
