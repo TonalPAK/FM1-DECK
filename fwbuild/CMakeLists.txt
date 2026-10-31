@@ -93,6 +93,9 @@ function(fm1deck_add_firmware id)
     target_include_directories(fw_${id} PRIVATE
             "${gen}"
             "${FM1DECK_UPSTREAM_ROOT}/${id}/firmware/src"
+            "${FM1DECK_UPSTREAM_ROOT}/${id}/firmware/hal"
+            "${FM1DECK_UPSTREAM_ROOT}/${id}/firmware/bsp/chip"
+            "${FM1DECK_UPSTREAM_ROOT}/${id}/firmware/bsp/boards/fm1"
             "${FM1DECK_FW_API_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/glue"
             "${CMAKE_CURRENT_SOURCE_DIR}/profiles")

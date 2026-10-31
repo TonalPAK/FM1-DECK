@@ -76,6 +76,17 @@ def generate_firmware(fw_id: str, root: Path) -> None:
     with tarfile.open(fileobj=io.BytesIO(res.stdout)) as tar:
         tar.extractall(path=src_dir)
 
+    # Extract submodules if present (e.g. Felucca firmware/engines, firmware/bsp)
+    gitmodules = upstream_dir / ".gitmodules"
+    if gitmodules.exists():
+        for sp in ["firmware/engines", "firmware/bsp"]:
+            sd = upstream_dir / sp
+            if (sd / ".git").exists() or (sd / ".git").is_file():
+                print(f"[fwgen] Exporting submodule archive from {sd}...")
+                sres = subprocess.run(["git", "-C", str(sd), "archive", "HEAD"], stdout=subprocess.PIPE, check=True)
+                with tarfile.open(fileobj=io.BytesIO(sres.stdout)) as star:
+                    star.extractall(path=src_dir / sp)
+
     print(f"[fwgen] Running generator in {src_dir}...")
     # Upstream generators call sys.executable for sub-scripts, so use sys.executable
     gen_cmd = [
