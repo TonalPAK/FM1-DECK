@@ -50,6 +50,9 @@ public:
     void hostClock(uint32_t on) noexcept override {
         if (api_->host_clock) api_->host_clock(on);
     }
+    void hostSync(double bpm, uint32_t playing) noexcept override {
+        if (api_->caps & FM1_CAP_HOST_SYNC) api_->host_sync(bpm, playing);
+    }
     int32_t saveNow() noexcept override {
         return api_->save_now ? api_->save_now() : -1;
     }

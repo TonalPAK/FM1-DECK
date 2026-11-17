@@ -54,11 +54,12 @@ public:
     void setQuantum(int beats);
     /** Start (on the next quantum boundary, together with the peers) or stop the shared transport. */
     void togglePlay();
+    void stop();
     /**
-     * The panel's buttons on their way to the firmware: while the clock is on (clockOn), a lone PLAY press is the shared transport's
-     * (togglePlay) and does not reach the firmware; PLAY with other buttons held (GLO+PLAY, REC+PLAY…) passes.
+     * A lone PLAY is shared only when the focused firmware can receive shared transport.
+     * PLAY with other buttons held (GLO+PLAY, REC+PLAY…) passes.
      */
-    uint32_t filterButtons(uint32_t mask);
+    uint32_t filterButtons(uint32_t mask, uint32_t caps);
     Status status() const;
     /** Output latency to add to "now" for the first frame of a buffer (stream + master bus), microseconds. */
     void setOutputLatencyUs(int64_t us) noexcept { latencyUs_.store(us, std::memory_order_relaxed); }

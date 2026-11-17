@@ -28,6 +28,12 @@
 #ifndef FM1DECK_BUILD_INFO
 #define FM1DECK_BUILD_INFO "local"
 #endif
+#ifndef FM1DECK_GLUE_HOST_SYNC
+#define FM1DECK_GLUE_HOST_SYNC 0
+#endif
+#ifndef FM1DECK_GLUE_MIDI_REALTIME
+#define FM1DECK_GLUE_MIDI_REALTIME FM1DECK_GLUE_HOST_CLOCK
+#endif
 
 _Static_assert(NB == FM1_BUTTON_COUNT, "button labels differ from Fm1FirmwareApi");
 _Static_assert(NE == FM1_ENCODER_COUNT, "encoder roles differ from Fm1FirmwareApi");
@@ -136,7 +142,9 @@ static void fd_test_heavy(void) { web_test_heavy(); }  /* Felucca / JIANT HALs o
 #endif
 
 /* ------------------------------------------------------------------ the table --- */
-#define FD_CAPS ( (FM1DECK_GLUE_HOST_CLOCK ? (FM1_CAP_HOST_CLOCK | FM1_CAP_MIDI_REALTIME) : 0u) \
+#define FD_CAPS ( (FM1DECK_GLUE_HOST_CLOCK ? FM1_CAP_HOST_CLOCK : 0u) \
+                | (FM1DECK_GLUE_MIDI_REALTIME ? FM1_CAP_MIDI_REALTIME : 0u) \
+                | (FM1DECK_GLUE_HOST_SYNC ? FM1_CAP_HOST_SYNC : 0u) \
                 | (FM1DECK_GLUE_SAVE_NOW ? FM1_CAP_SAVE_NOW : 0u) \
                 | (FM1DECK_GLUE_UI_STATE ? FM1_CAP_UI_STATE : 0u) \
                 | (FM1DECK_GLUE_SEED ? FM1_CAP_SEED : 0u) \
@@ -183,6 +191,11 @@ static const Fm1FirmwareApi fd_api = {
 #endif
 #if FM1DECK_GLUE_TEST_HEAVY
     fd_test_heavy,
+#else
+    0,
+#endif
+#if FM1DECK_GLUE_HOST_SYNC
+    fd_host_sync,
 #else
     0,
 #endif

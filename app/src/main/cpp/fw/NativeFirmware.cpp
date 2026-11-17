@@ -85,6 +85,13 @@ std::unique_ptr<NativeFirmware> NativeFirmware::open(const std::string& pathOrSo
     }
 
     // Check capability bits vs non-null function pointers
+    if ((api->caps & FM1_CAP_HOST_SYNC) &&
+        (api->struct_size < offsetof(Fm1FirmwareApi, host_sync) + sizeof(api->host_sync) || !api->host_sync)) {
+        errorReason = "Module advertises FM1_CAP_HOST_SYNC without a valid host_sync entry";
+        LOGW("%s", errorReason.c_str());
+        dlclose(handle);
+        return nullptr;
+    }
     if ((api->caps & FM1_CAP_HOST_CLOCK) && !api->host_clock) {
         errorReason = "Module advertises FM1_CAP_HOST_CLOCK but host_clock is null";
         LOGW("%s", errorReason.c_str());

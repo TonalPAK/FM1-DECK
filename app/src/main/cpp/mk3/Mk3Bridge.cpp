@@ -554,10 +554,11 @@ void Mk3Bridge::renderRightScreen(uint8_t* pixels) {
     drawRect(pixels, 12, 26, 456, 18, COL_PANEL_BRD);
     char titleStr[64];
     const int focusSlot = engine_ ? engine_->focus() : 0;
-    const char* slotShort[4] = { "JIANT FM", "FELUCCA", "SLOOP", "HORTATOR" };
-    snprintf(titleStr, sizeof(titleStr), "%s // %s",
-             slotShort[focusSlot],
-             hasUiState && uiState.page_title[0] ? uiState.page_title : "PAGE 1: SOUND ENGINE");
+    const auto* host = engine_ ? engine_->host(focusSlot) : nullptr;
+    const auto id = host ? host->activeId() : std::string{};
+    snprintf(titleStr, sizeof(titleStr), "%s%s%s", id.empty() ? "EMPTY" : id.c_str(),
+             hasUiState && uiState.page_title[0] ? " // " : "",
+             hasUiState ? uiState.page_title : "");
     drawString(pixels, 20, 31, titleStr, COL_LIME, 0, 1, true);
 
     // 4 Parameter Dials/Bars for Knobs 1..4 (x = 12..468, y = 48..118)
@@ -567,19 +568,20 @@ void Mk3Bridge::renderRightScreen(uint8_t* pixels) {
         fillRect(pixels, kx, 48, 110, 68, COL_PANEL_BG);
         drawRect(pixels, kx, 48, 110, 68, touched ? COL_WHITE : COL_PANEL_BRD);
 
-        const char* label = (hasUiState && uiState.knob[k][0]) ? uiState.knob[k] : "PARAM";
+        const char* const fallback[4] = {"K1", "K2", "K3", "K4"};
+        const char* label = (hasUiState && uiState.knob[k][0]) ? uiState.knob[k] : fallback[k];
         drawString(pixels, kx + 8, 54, label, touched ? COL_WHITE : COL_CYAN, 0, 1, true);
 
-        int16_t val = (hasUiState && (uiState.knob_valid & (1u << k))) ? uiState.knob_value[k] : static_cast<int16_t>(encoderVals_[k] / 8);
-        int16_t minV = (hasUiState && (uiState.knob_valid & (1u << k))) ? uiState.knob_min[k] : 0;
-        int16_t maxV = (hasUiState && (uiState.knob_valid & (1u << k))) ? uiState.knob_max[k] : 127;
-        if (maxV <= minV) maxV = minV + 1;
+        if (!hasUiState || !(uiState.knob_valid & (1u << k))) continue;
+        const int val = uiState.knob_value[k];
+        const int minV = uiState.knob_min[k];
+        const int maxV = uiState.knob_max[k];
 
         char valStr[16];
         snprintf(valStr, sizeof(valStr), "%d", val);
         drawString(pixels, kx + 8, 70, valStr, COL_WHITE, 0, 2, true);
 
-        drawHBar(pixels, kx + 8, 96, 94, 10, val - minV, maxV - minV, COL_LIME, rgb565(8, 12, 18));
+        if (maxV > minV) drawHBar(pixels, kx + 8, 96, 94, 10, val - minV, maxV - minV, COL_LIME, rgb565(8, 12, 18));
     }
 
     // 4 Secondary Controls (Knobs 5..8: SELECT, ALGO, PRESET, MASTER)
@@ -640,24 +642,20 @@ bool Mk3Bridge::processInputPacket(const uint8_t* buf, int len) {
         const bool playNow = (buf[6] & 0x20) != 0;
         const bool recNow  = (buf[6] & 0x40) != 0;
         const bool stopNow = (buf[6] & 0x80) != 0;
+        bool panelChanged = playNow != btnPlay_ || recNow != btnRec_;
 
         if (playNow != btnPlay_) {
             btnPlay_ = playNow;
-            if (playNow && engine_ && engine_->slot()) {
-                engine_->slot()->pushButtons(FM1_B_PLAY);
-            }
             changed = true;
         }
         if (recNow != btnRec_) {
             btnRec_ = recNow;
-            if (recNow && engine_ && engine_->slot()) {
-                engine_->slot()->pushButtons(FM1_B_REC);
-            }
             changed = true;
         }
         if (stopNow != btnStop_) {
             btnStop_ = stopNow;
             if (stopNow && engine_ && engine_->slot()) {
+                engine_->link()->stop();
                 engine_->slot()->requestSave();
             }
             changed = true;
@@ -698,19 +696,26 @@ bool Mk3Bridge::processInputPacket(const uint8_t* buf, int len) {
             const bool st = (buf[9] & (1 << (7 - i))) != 0;
             if (st != btnDisplay_[static_cast<size_t>(i)]) {
                 btnDisplay_[static_cast<size_t>(i)] = st;
+                if (i < 6) panelChanged = true;
                 if (st && engine_ && engine_->slot()) {
                     switch (i) {
-                        case 0: engine_->slot()->pushButtons(FM1_B_HOME); break;
-                        case 1: engine_->slot()->pushButtons(FM1_B_GLO); break;
-                        case 2: engine_->slot()->pushButtons(FM1_B_EDIT); break;
-                        case 3: engine_->slot()->pushButtons(FM1_B_FX); break;
-                        case 4: engine_->slot()->pushButtons(FM1_B_ARP); break;
-                        case 5: engine_->slot()->pushButtons(FM1_B_SEQ); break;
                         case 6: octave_.store(std::max(-2, octave_.load() - 1)); break;
                         case 7: octave_.store(std::min(2, octave_.load() + 1)); break;
                     }
                 }
                 changed = true;
+            }
+        }
+        if (panelChanged && engine_) {
+            const auto focus = engine_->focus();
+            auto* slot = engine_->slot(focus);
+            const auto* host = engine_->host(focus);
+            if (slot && host) {
+                const int roles[] = {FM1_B_HOME, FM1_B_GLO, FM1_B_EDIT, FM1_B_FX, FM1_B_ARP, FM1_B_SEQ};
+                uint32_t mask = (playNow ? 1u << FM1_B_PLAY : 0u) | (recNow ? 1u << FM1_B_REC : 0u);
+                for (int i = 0; i < 6; ++i)
+                    if (btnDisplay_[static_cast<size_t>(i)]) mask |= 1u << roles[i];
+                slot->pushButtons(engine_->link()->filterButtons(mask, host->caps()));
             }
         }
 

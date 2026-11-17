@@ -16,7 +16,9 @@ Java_io_github_fm1deck_engine_NativeBridge_nativeLinkEnable(JNIEnv* /*env*/, job
 /** The rack's shared clock (LinkSync::setLocal): no network. */
 JNIEXPORT void JNICALL
 Java_io_github_fm1deck_engine_NativeBridge_nativeLinkSetLocal(JNIEnv* /*env*/, jobject /*thiz*/, jboolean on) {
-    fm1deck::getAudioEngine().link()->setLocal(on == JNI_TRUE);
+    auto& engine = fm1deck::getAudioEngine();
+    if (on == JNI_TRUE) engine.updateOutputLatency();
+    engine.link()->setLocal(on == JNI_TRUE);
 }
 
 JNIEXPORT void JNICALL

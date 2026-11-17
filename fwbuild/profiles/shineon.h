@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #define FM1DECK_FW_ID "shineon"
 #define FM1DECK_FW_NAME "SHINE ON"
+#define FM1DECK_GLUE_MIDI_REALTIME 1
 #define FM1DECK_GLUE_HOST_CLOCK 0
 #define FM1DECK_GLUE_SAVE_NOW 1
 #define FM1DECK_GLUE_UI_STATE 0

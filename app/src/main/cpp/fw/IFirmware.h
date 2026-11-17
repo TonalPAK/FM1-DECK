@@ -38,6 +38,7 @@ public:
     virtual void master(uint32_t adc) noexcept = 0;
     virtual uint32_t midi(uint32_t status, uint32_t d1, uint32_t d2) noexcept = 0;
     virtual void hostClock(uint32_t on) noexcept = 0;
+    virtual void hostSync(double, uint32_t) noexcept {}
     virtual int32_t saveNow() noexcept = 0;
 
     virtual const uint16_t* screen() noexcept = 0;

@@ -91,7 +91,17 @@ void LinkSync::togglePlay() {
     link.commitAppSessionState(state);
 }
 
-uint32_t LinkSync::filterButtons(uint32_t mask) {
+void LinkSync::stop() {
+    std::lock_guard<std::mutex> lock(controlMutex_);
+    if (!created_.load(std::memory_order_acquire) || !clockOn()) return;
+    auto& link = *impl_->link;
+    auto state = link.captureAppSessionState();
+    if (!state.isPlaying()) return;
+    state.setIsPlaying(false, link.clock().micros());
+    link.commitAppSessionState(state);
+}
+
+uint32_t LinkSync::filterButtons(uint32_t mask, uint32_t caps) {
     const uint32_t playBit = 1u << FM1_B_PLAY;
     bool toggle = false;
     uint32_t out = mask;
@@ -103,7 +113,8 @@ uint32_t LinkSync::filterButtons(uint32_t mask) {
             playSwallowed_ = false;
             return mask;
         }
-        if (play && !playHeld_ && (mask & ~playBit) == 0) {
+        if (play && !playHeld_ && (mask & ~playBit) == 0 &&
+            (caps & (FM1_CAP_HOST_CLOCK | FM1_CAP_HOST_SYNC | FM1_CAP_MIDI_REALTIME))) {
             playSwallowed_ = true;
             toggle = true;
         }
@@ -167,16 +178,21 @@ void LinkSync::beforeSubBlock(int laneIndex, IFirmware* fw, int offset, int n) n
     auto& im = *impl_;
     if (!fw || laneIndex < 0 || laneIndex >= kLanes) return;
     auto& ln = im.lanes[laneIndex];
+    const bool direct = (fw->caps() & FM1_CAP_HOST_SYNC) != 0;
     const bool on = im.active;
     bool joined = false;
     if (fw != ln.lastFw || on != ln.clockOn) {
         // A new firmware instance, or Link switched: tell the firmware whose clock it follows. "Off" only undoes
         // our own "on": a CLK the user set on the device for a real MIDI clock stays as it is.
-        if (on) fw->hostClock(1u);
-        else if (ln.clockOn && fw == ln.lastFw) fw->hostClock(0u);
+        if (on && !direct) fw->hostClock(1u);
+        else if (!on && ln.clockOn && fw == ln.lastFw) {
+            if (direct) fw->hostSync(0.0, 0u);
+            else fw->hostClock(0u);
+        }
         ln.lastFw = fw;
         ln.clockOn = on;
         ln.pulser.reset();
+        ln.join = 0.0;
         joined = true;
         if (!on) im.wasPlaying = false;
     }
@@ -189,7 +205,11 @@ void LinkSync::beforeSubBlock(int laneIndex, IFirmware* fw, int offset, int n) n
     // A firmware that comes in while the others play starts with them on the next bar (quantum), in phase
     if (!st.isPlaying()) ln.join = 0.0;
     else if (joined && b0 > 0.0) ln.join = std::ceil(b0 / im.quantum) * im.quantum;
-    ln.pulser.step(b0 - ln.join, b1 - ln.join, st.isPlaying(), [fw](uint32_t status) { fw->midi(status, 0, 0); });
+    if (direct) {
+        fw->hostSync(st.tempo(), st.isPlaying() && 0.5 * (b0 + b1) >= ln.join);
+    } else {
+        ln.pulser.step(b0 - ln.join, b1 - ln.join, st.isPlaying(), [fw](uint32_t status) { fw->midi(status, 0, 0); });
+    }
 }
 
 void LinkSync::endBuffer() noexcept {

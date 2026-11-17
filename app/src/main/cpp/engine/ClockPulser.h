@@ -47,7 +47,7 @@ public:
         if (startNow) {
             // Pulses before beat 0, then Start, then the downbeat's pulse (MIDI: the first clock after FA is beat 0)
             for (int64_t p = last_ + 1; p < 0 && p <= k; ++p) emit(kClock);
-            if (last_ < -1) last_ = -1;
+            last_ = k - 1; // the new downbeat gets a pulse even if the stopped clock just emitted this tick
             emit(kStart);
             running_ = true;
         }

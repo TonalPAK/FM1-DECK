@@ -78,6 +78,18 @@ static void testStop() {
     std::cout << "[clock] Stop (FC) once; the clock keeps running for the tempo" << std::endl;
 }
 
+static void testRestartEmitsDownbeat() {
+    ClockPulser p;
+    std::vector<uint32_t> out;
+    auto emit = [&](uint32_t s) { out.push_back(s); };
+    p.step(0.0, 0.001, true, emit);
+    CHECK((out == std::vector<uint32_t>{ClockPulser::kStart, ClockPulser::kClock}));
+    p.step(0.125, 0.126, false, emit);
+    out.clear();
+    p.step(0.0, 0.001, true, emit);
+    CHECK((out == std::vector<uint32_t>{ClockPulser::kStart, ClockPulser::kClock}));
+}
+
 static void testJumpsMakeNoBurst() {
     ClockPulser p;
     std::vector<uint32_t> out;
@@ -116,6 +128,7 @@ int main() {
     testSteadyPulses();
     testStartOnBeatZero();
     testStop();
+    testRestartEmitsDownbeat();
     testJumpsMakeNoBurst();
     testSmallStepBackIsWaitedOut();
     std::cout << "[test_clock_pulser] ALL PASSED" << std::endl;

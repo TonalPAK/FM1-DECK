@@ -2,7 +2,7 @@
  * FM1 DECK profile: SLOOP (https://github.com/isod89/sloop-fm1, by isod89, based on Felucca). SLOOP ships no browser
  * emulator; the HAL is fwbuild/hal/sloop/sloop_web.c (adapted 2026-10-11 from Felucca's felucca_web.c).
  * SLOOP's SYNC global picks the clock (its G_CLOCK is the metronome). Its own autosave path (persist_flush_now's
- * project half) replaces the Felucca one. UI_STATE is off until P4 maps SLOOP's ui (LY_* layers, its own PAGES). */
+ * project half) replaces the Felucca one. */
 #define FM1DECK_FW_ID "sloop"
 #define FM1DECK_FW_NAME "SLOOP"
 #define FM1DECK_CLOCK_PARAM G_SYNC
@@ -13,7 +13,10 @@
 #define FM1DECK_GLUE_SAVE_NOW 1
 #endif
 #ifndef FM1DECK_GLUE_UI_STATE
-#define FM1DECK_GLUE_UI_STATE 0                 /* TODO(P4): LY_PLAY..LY_SONG -> FM1_LAYER_*, SLOOP PAGES/page_desc */
+#define FM1DECK_GLUE_UI_STATE 1
+#endif
+#if FM1DECK_GLUE_UI_STATE
+#include "sloop_family_ui.h"
 #endif
 #ifndef FM1DECK_GLUE_SEED
 #define FM1DECK_GLUE_SEED 0

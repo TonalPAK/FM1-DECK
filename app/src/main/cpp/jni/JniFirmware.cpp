@@ -113,10 +113,14 @@ Java_io_github_fm1deck_engine_NativeBridge_nativeFwTestHeavy(JNIEnv* /*env*/, jo
 
 JNIEXPORT void JNICALL
 Java_io_github_fm1deck_engine_NativeBridge_nativePanel(JNIEnv* /*env*/, jobject /*thiz*/, jint buttons, jint keys) {
-    auto* slot = fm1deck::getAudioEngine().slot();
+    auto& engine = fm1deck::getAudioEngine();
+    const auto focus = engine.focus();
+    auto* slot = engine.slot(focus);
     if (!slot) return;
-    // With Link on, a lone PLAY is the shared transport's (LinkSync::filterButtons)
-    const uint32_t b = fm1deck::getAudioEngine().link()->filterButtons(static_cast<uint32_t>(buttons));
+    const auto* host = engine.host(focus);
+    const auto mask = static_cast<uint32_t>(buttons);
+    const uint32_t caps = mask == (1u << FM1_B_PLAY) && engine.link()->clockOn() && host ? host->caps() : 0;
+    const uint32_t b = engine.link()->filterButtons(mask, caps);
     slot->pushPanel(b, static_cast<uint32_t>(keys));
 }
 

@@ -9,7 +9,10 @@
 #define FM1DECK_GLUE_SAVE_NOW 1
 #endif
 #ifndef FM1DECK_GLUE_UI_STATE
-#define FM1DECK_GLUE_UI_STATE 0
+#define FM1DECK_GLUE_UI_STATE 1
+#endif
+#if FM1DECK_GLUE_UI_STATE
+#include "sloop_family_ui.h"
 #endif
 #ifndef FM1DECK_GLUE_SEED
 #define FM1DECK_GLUE_SEED 0

@@ -51,6 +51,7 @@ struct IFirmware {
 | `leds()` | `web_lit_buttons`, `web_lit_keys`, `web_dim_buttons`, `web_dim_keys`, `web_breath_buttons`, `web_breath_keys`, `web_mid_keys`, `web_dim_level` | `web_mid_keys` may be missing in old wasm → 0 |
 | `anim_levels()` | `web_anim_levels` | 41 bytes or 0 |
 | `playing()/now_ms()` | `web_playing`, `web_now_ms` | |
+| `host_sync(bpm, playing)` | optional firmware adapter | Direct shared tempo and effective transport at render boundaries. Zero BPM releases host control. |
 | `test_heavy()` | `web_test_heavy` | Felucca/JIANT |
 | — | `web_sample_rate` | check: must be 44100 |
 
@@ -82,6 +83,7 @@ and the upstream wasm in Node → float32 comparison. This test is a gate for an
 
 - `FM1DECK_FW_ABI` grows only on an incompatible change of the table. Appending fields + growing `struct_size` is
   compatible; the host reads a field only if it fits in `struct_size`.
+- `FM1_CAP_HOST_SYNC` advertises the appended `host_sync` entry. ABI 1 modules without the entry can still load.
 - The package manifest carries `abi` (native), `wasmExports` (a list), `capabilities` (what was actually built).
 - About shows the ABI, the firmware version, `build_info` and the backend.
 
@@ -91,7 +93,7 @@ and the upstream wasm in Node → float32 comparison. This test is a gate for an
 |---|---|---|---|
 | `HOST_CLOCK` (`G_CLOCK`/`G_SYNC` + `midi_enqueue`) | yes | yes | yes (`G_SYNC`) |
 | `SAVE_NOW` | yes (Felucca autosave) | yes | yes (its own `persist_flush_now`) |
-| `UI_STATE` | yes (verified by compiling) | yes | P4 (its own `LY_*`, `PAGES`) |
+| `UI_STATE` | yes | yes | yes (page metadata from `PAGES`) |
 | `SEED` | — | yes | — |
 | `TEST_HEAVY` | yes | yes | P5 (its own test song) |
 

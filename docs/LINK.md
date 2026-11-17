@@ -29,8 +29,10 @@ Link is off at every app start: the network is used only on a user action. Only 
   48 kHz). The firmware in external-clock mode (`host_clock(1)`: Felucca/JIANT CLK, SLOOP SYNC) follows the pulses.
 - Start: on press, `setIsPlaying(true)`; every participant, on its own audio thread, calls
   `requestBeatAtStartPlayingTime(0, quantum)` — beat 0 lands on the nearest quantum boundary in phase with the session.
-- A plain PLAY is intercepted in `nativePanel` (`LinkSync::filterButtons`) and does not reach the firmware while Link
-  is on.
+- With Link or the local rack clock active, plain PLAY in a slot that supports shared transport controls the rack.
+  In other slots PLAY still reaches the firmware. Use the rack's PLAY to control the shared transport from any slot.
+- SHRUB receives the shared tempo directly with 0.01 BPM resolution (20–300 BPM) and starts at the scheduled boundary.
+  Its TEMPO page displays the shared value while following it. The preset keeps its own tempo.
 - Android filters multicast on Wi-Fi: while Link is on, a `WifiManager.MulticastLock` is held. Permissions:
   `INTERNET`, `CHANGE_WIFI_MULTICAST_STATE`.
 - Switching Link off gives the firmware its internal clock back (only if we switched it: a CLK set by hand is left

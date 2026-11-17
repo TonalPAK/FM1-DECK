@@ -3,6 +3,9 @@
 #define FM1DECK_FW_ID "shrub"
 #define FM1DECK_FW_NAME "SHRUB"
 #define FM1DECK_GLUE_HOST_CLOCK 0
+#ifndef FM1DECK_GLUE_HOST_SYNC
+#define FM1DECK_GLUE_HOST_SYNC 1
+#endif
 #define FM1DECK_GLUE_SAVE_NOW 1
 #define FM1DECK_GLUE_UI_STATE 1
 #define FM1DECK_GLUE_SEED 1
@@ -10,6 +13,9 @@
 #define FM1DECK_CUSTOM_SAVE_NOW 1
 
 static int32_t fd_save_now(void) { return shrub_save_now(); }
+#if FM1DECK_GLUE_HOST_SYNC
+static void fd_host_sync(double bpm, uint32_t playing) { shrub_host_sync(bpm, playing); }
+#endif
 
 static void fd_shrub_copy(char *dst, const char *src, uint32_t cap)
 {
@@ -43,6 +49,12 @@ static void fd_ui_state(Fm1UiState *o)
         o->knob_min[k] = 0;
         o->knob_max[k] = 1000;
         o->knob_value[k] = (int16_t)((v * 1000u) / 65535u);
+        if (p == SHRUB_TEMPO_PARAM) {
+            o->knob_min[k] = 20;
+            o->knob_max[k] = 300;
+            const uint32_t bpm = shrub_host_tempo ? (shrub_host_tempo + 50u) / 100u : w_ld_u32(SHRUB_PRESET_BPM);
+            o->knob_value[k] = (int16_t)bpm;
+        }
         o->knob_valid |= (1u << k);
     }
 }

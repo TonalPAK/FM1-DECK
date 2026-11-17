@@ -8,6 +8,10 @@
 #include "../../../app/src/main/cpp/mk3/font8x8.h"
 
 #define FS 44100u
+/* SHRUB 1.05: preset tempo (integer BPM) and current DSP tempo (hundredths of BPM). */
+#define SHRUB_TEMPO_PARAM 90u
+#define SHRUB_PRESET_BPM 307392u
+#define SHRUB_DSP_CENTI_BPM 858164u
 
 enum {
     B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE,
@@ -95,7 +99,7 @@ static const ShrubGroupDef SHRUB_GROUPS[9] = {
         { "ARP",       { 138u, 139u, 140u, 141u } }, /* MODE, RATE, OCTAVES, GATE */
     }},
     { "SEQ", B_SEQ, 5u /* SEQ */, 2u, {
-        { "SEQ/NOISE", {  90u, 165u,  29u,  30u } }, /* TEMPO, VOICES, N TYPE, N LVL */
+        { "SEQ/NOISE", { SHRUB_TEMPO_PARAM, 165u, 29u, 30u } }, /* TEMPO, VOICES, N TYPE, N LVL */
         { "CHAOS/M1",  { 308u, 310u,  65u,  67u } }, /* CH1 RATE, CH2 RATE, M1 SRC, M1 AMT */
     }},
 };
@@ -123,6 +127,44 @@ static uint32_t shrub_cur_sub[9];
 static uint32_t shrub_preset_idx;
 static uint32_t shrub_playing;
 static uint32_t shrub_recording;
+static uint32_t shrub_host_tempo;
+static uint32_t shrub_host_playing;
+
+static void shrub_apply_host_tempo(void)
+{
+    if (shrub_host_tempo && w_ld_u32(SHRUB_DSP_CENTI_BPM) != shrub_host_tempo)
+        wf_250(shrub_host_tempo); /* refresh the DSP without writing the preset parameter */
+}
+
+static void shrub_set_transport(uint32_t playing)
+{
+    sw_seq_play(playing);
+    sw_transport(playing);
+    shrub_playing = playing;
+    if (!playing) shrub_recording = 0u;
+}
+
+static void shrub_host_sync(double bpm, uint32_t playing)
+{
+    if (!shrub_booted) return;
+    if (bpm <= 0.0) {
+        if (!shrub_host_tempo) return;
+        shrub_host_tempo = 0u;
+        shrub_host_playing = 0u;
+        shrub_set_transport(0u);
+        wf_250(w_ld_u32(SHRUB_PRESET_BPM) * 100u);
+        return;
+    }
+    const uint32_t was_controlled = shrub_host_tempo != 0u;
+    if (bpm < 20.0) bpm = 20.0;
+    if (bpm > 300.0) bpm = 300.0;
+    shrub_host_tempo = (uint32_t)(bpm * 100.0 + 0.5);
+    shrub_apply_host_tempo();
+    if (!was_controlled || shrub_host_playing != playing) {
+        shrub_host_playing = playing;
+        shrub_set_transport(playing);
+    }
+}
 
 static uint32_t shrub_master_adc = 700u;
 static float    shrub_master_smooth = 0.468f;
@@ -314,6 +356,19 @@ static void shrub_draw_dashboard(void)
         const char *val_txt = wasm_cstr(sw_text(param));
         uint32_t v = sw_value(param);
         if (v > 65535u) v = 65535u;
+        char bpm_text[7];
+        if (param == SHRUB_TEMPO_PARAM && shrub_host_tempo) {
+            const uint32_t bpm = shrub_host_tempo;
+            bpm_text[0] = (char)('0' + bpm / 10000u);
+            bpm_text[1] = (char)('0' + bpm / 1000u % 10u);
+            bpm_text[2] = (char)('0' + bpm / 100u % 10u);
+            bpm_text[3] = '.';
+            bpm_text[4] = (char)('0' + bpm / 10u % 10u);
+            bpm_text[5] = (char)('0' + bpm % 10u);
+            bpm_text[6] = 0;
+            val_txt = bpm_text + (bpm < 10000u);
+            v = ((bpm - 2000u) * 65535u) / 28000u;
+        }
 
         fb_draw_text(cx + 5u, cy + 5u, lbl, c_dim, 1u, 12u);
         fb_draw_text(cx + 5u, cy + 19u, val_txt, c_white, 1u, 12u);
@@ -439,6 +494,8 @@ static void web_boot(void)
     shrub_preset_idx = 0u;
     shrub_playing = 0u;
     shrub_recording = 0u;
+    shrub_host_tempo = 0u;
+    shrub_host_playing = 0u;
 
     sw_preset_load(0u);
     sw_publish();
@@ -475,6 +532,7 @@ static void web_render(uint32_t n)
     while (done < n) {
         uint32_t chunk = n - done;
         if (chunk > 128u) chunk = 128u;
+        shrub_apply_host_tempo();
         sw_seq_poll(shrub_ms);
         uint32_t ptr = sw_render(chunk);
         sw_poll();
@@ -565,18 +623,15 @@ static void web_buttons(uint32_t mask)
             shrub_draw_dashboard();
         }
     }
-    if ((rising >> B_PLAY) & 1u) {
+    if (((rising >> B_PLAY) & 1u) && !shrub_host_tempo) {
         uint32_t next_play = (sw_seq_state() & 1u) ? 0u : 1u;
-        sw_seq_play(next_play);
-        sw_transport(next_play);
-        shrub_playing = next_play;
-        if (!next_play) shrub_recording = 0u;
+        shrub_set_transport(next_play);
         shrub_draw_dashboard();
     }
     if ((rising >> B_REC) & 1u) {
         uint32_t st = sw_seq_state();
         uint32_t next_rec = (st & 2u) ? 0u : 1u;
-        if (next_rec && !(st & 1u)) {
+        if (next_rec && !(st & 1u) && !shrub_host_tempo) {
             sw_seq_play(1u);
             sw_transport(1u);
         }
@@ -655,6 +710,7 @@ static void web_enc(uint32_t role, int32_t steps)
         const ShrubGroupDef *grp = &SHRUB_GROUPS[shrub_cur_group];
         uint32_t sub = shrub_cur_sub[shrub_cur_group] % grp->sub_count;
         uint32_t param = grp->subs[sub].params[k];
+        if (param == SHRUB_TEMPO_PARAM && shrub_host_tempo) return;
         sw_adjust(param, (uint32_t)steps);
         sw_seq_touch(param, shrub_ms);
         sw_publish();

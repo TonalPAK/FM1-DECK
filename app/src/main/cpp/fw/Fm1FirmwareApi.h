@@ -65,6 +65,7 @@ enum {
 #define FM1_CAP_MID_KEYS    (1u << 5)  /* FM1_LED_MID_KEYS is meaningful (drum grid beats) */
 #define FM1_CAP_TEST_HEAVY  (1u << 6)  /* test_heavy(): load the upstream benchmark song (perf gates) */
 #define FM1_CAP_MIDI_REALTIME (1u << 7)/* midi() accepts real-time bytes F8 FA FB FC (implied by HOST_CLOCK) */
+#define FM1_CAP_HOST_SYNC   (1u << 8)  /* host_sync(): direct shared tempo and transport */
 
 /* Layer ids normalised across firmwares (ui_state().layer). Profiles map their LAYER_* / LY_* onto these. */
 enum {
@@ -130,6 +131,8 @@ typedef struct Fm1FirmwareApi {
 
     void (*ui_state)(Fm1UiState *out);  /* optional (FM1_CAP_UI_STATE) */
     void (*test_heavy)(void);           /* optional (FM1_CAP_TEST_HEAVY) */
+    /* At a render boundary. bpm == 0 releases host control; otherwise playing is the effective transport. */
+    void (*host_sync)(double bpm, uint32_t playing);
 } Fm1FirmwareApi;
 
 typedef const Fm1FirmwareApi *(*Fm1FirmwareEntry)(void);
