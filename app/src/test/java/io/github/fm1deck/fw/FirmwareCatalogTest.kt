@@ -10,14 +10,14 @@ import java.io.File
 class FirmwareCatalogTest {
 
     @Test
-    fun allTwentySevenFirmwaresHaveUniqueMetadata() {
-        assertEquals(27, FirmwareCatalog.builtins.size)
+    fun allTwentyEightFirmwaresHaveUniqueMetadata() {
+        assertEquals(28, FirmwareCatalog.builtins.size)
         val ids = FirmwareCatalog.builtins.map { it.id }
         val sonames = FirmwareCatalog.builtins.map { it.soname }
         val shorts = FirmwareCatalog.builtins.map { it.shortName }
-        assertEquals(27, ids.toSet().size)
-        assertEquals(27, sonames.toSet().size)
-        assertEquals(27, shorts.toSet().size)
+        assertEquals(28, ids.toSet().size)
+        assertEquals(28, sonames.toSet().size)
+        assertEquals(28, shorts.toSet().size)
 
         for (fw in FirmwareCatalog.builtins) {
             assertTrue("Missing name for ${fw.id}", fw.displayName.isNotBlank())

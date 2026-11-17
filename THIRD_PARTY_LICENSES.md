@@ -32,6 +32,7 @@ compatible with GPL-3.0. Keep this file current: a phase that adds code from els
 | K-WASUB (Omnipotard / Guizmoh) | `upstream/kwasub` (1.1.03) | GPL-3.0-only | bass synth |
 | Shine On (zvenson) | `upstream/shineon` (3.5) | GPL-3.0-only | built on OberVave / Dinghy |
 | CHOPPAH (Laurens Profittlich) | `upstream/choppah` (1.4.1) | MPL-2.0 | built on `fm1-base` |
+| SHRUB (Steve Duda / Xfer Records) | `fwbuild/hal/shrub/shrub_web.c` + `tools/shrub_wasm2c.py` (1.05) | Freeware / proprietary Xfer WASM translated locally | extracted from user-supplied `Shrub.vst3` (`shrub.wasm`) for local evaluation |
 | Firmware Hub thumbnails (Sven Trogus & firmware authors) | `app/src/main/assets/fw_thumbs/` | GPL-3.0-only | card artwork from `thefirmwarehub.com` |
 | Host HAL adapters (`fm1base`, `dinghy`, `aisling`, `fimba`, `coralflower`, `arctic`, `kwasub`, `demake`, `ravel`) | `fwbuild/hal/` | GPL-3.0-only | wraps unmodified upstream firmware simulators into `Fm1FirmwareApi` |
 | Browser-emulator HAL design (X0X by charlesvestal, Felucca `web/emu`) | used via upstream `felucca_web.c` | GPL-3.0 | not copied, built from upstream |

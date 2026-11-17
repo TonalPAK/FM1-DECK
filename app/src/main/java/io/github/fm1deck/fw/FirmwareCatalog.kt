@@ -390,7 +390,21 @@ object FirmwareCatalog {
         repoUrl = "https://github.com/DeadActive/hortator"
     )
 
+    val SHRUB = FirmwareEntry(
+        id = "shrub",
+        displayName = "SHRUB",
+        soname = "libfw_shrub.so",
+        shortName = "SHR",
+        version = "1.05",
+        author = "Steve Duda (Xfer)",
+        tags = listOf("SYNTH", "SERUM"),
+        description = "Wavetable synth after Serum 1 & 2: dual warp oscillators, Cytomic/DMG filters, 16-slot matrix, 7-slot FX rack with OTT and 8-lane seq.",
+        accentColorHex = 0xFF9BEE5E,
+        repoUrl = "https://shrub.audio"
+    )
+
     val builtins: List<FirmwareEntry> = listOf(
+        SHRUB,
         MUTABLE, FMINI, OBERVAVE, CORALFLOWER,
         AMB, BLOP, LOAFBREAKER, FRASIL,
         ATEK303, GURU600, RAVEL, S1VAVE,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 # FM1 DECK — tools/fwgen/fwgen.py
-# Generates firmware headers (fonts, icons, tables, samples) for all 27 built-in firmwares
+# Generates firmware headers (fonts, icons, tables, samples) for all 28 built-in firmwares
 # without touching upstream submodules/clones.
 
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 FELUCCA_STYLE = ("felucca", "jiant", "sloop", "hortator", "fmini", "clipper", "coralflower", "aisling", "fimba")
 FM1BASE_STYLE = ("amb", "blop", "choppah", "echofield", "frasil", "jamtrack", "loafbreaker", "loom", "mutable", "atek303")
 PREGEN_STYLE = ("obervave", "s1vave", "shineon", "arctic", "demake", "kwasub")
-SPECIAL_STYLE = ("guru600", "ravel")
+SPECIAL_STYLE = ("guru600", "ravel", "shrub")
 VALID_FIRMWARES = FELUCCA_STYLE + FM1BASE_STYLE + PREGEN_STYLE + SPECIAL_STYLE
 
 
@@ -69,10 +69,6 @@ def export_git_tree(src_repo: Path, dst_dir: Path) -> None:
 
 def generate_firmware(fw_id: str, root: Path) -> None:
     print(f"\n[fwgen] === Generating headers for {fw_id} ===")
-    upstream_dir = root / "upstream" / fw_id
-    if not upstream_dir.exists():
-        raise SystemExit(f"[fwgen] Upstream dir not found: {upstream_dir}")
-
     build_fwgen_dir = root / "build" / "fwgen" / fw_id
     src_dir = build_fwgen_dir / "src"
     gen_dir = build_fwgen_dir / "gen"
@@ -83,6 +79,35 @@ def generate_firmware(fw_id: str, root: Path) -> None:
     if gen_dir.exists():
         shutil.rmtree(gen_dir)
     gen_dir.mkdir(parents=True, exist_ok=True)
+
+    if fw_id == "shrub":
+        wasm_candidates = [
+            root / "fwbuild" / "hal" / "shrub" / "shrub.wasm",
+            root / "upstream" / "shrub" / "shrub.wasm",
+            Path(r"D:\DECOMPILLE\Shrub_decompiled\ui\shrub.wasm"),
+        ]
+        wasm_path = next((p for p in wasm_candidates if p.is_file()), None)
+        if wasm_path is None:
+            vst3 = Path(r"D:\DECOMPILLE\Shrub.vst3\Contents\x86_64-win\Shrub.vst3")
+            if vst3.is_file():
+                subprocess.run(
+                    [sys.executable, str(root / "tools" / "shrub_extract_and_decompile.py"), "--vst3", str(vst3)],
+                    check=True,
+                )
+                wasm_path = Path(r"D:\DECOMPILLE\Shrub_decompiled\ui\shrub.wasm")
+        if wasm_path is None or not wasm_path.is_file():
+            raise SystemExit("[fwgen] shrub.wasm not found in upstream/shrub or D:\\DECOMPILLE\\Shrub_decompiled\\ui")
+        out_hdr = gen_dir / "shrub_wasm_gen.h"
+        subprocess.run(
+            [sys.executable, str(root / "tools" / "shrub_wasm2c.py"), "--wasm", str(wasm_path), "--out-header", str(out_hdr)],
+            check=True,
+        )
+        _copy_headers_and_hash([out_hdr], gen_dir, build_fwgen_dir)
+        return
+
+    upstream_dir = root / "upstream" / fw_id
+    if not upstream_dir.exists():
+        raise SystemExit(f"[fwgen] Upstream dir not found: {upstream_dir}")
 
     # Pre-generated firmwares: copy committed firmware/gen/*.h directly
     if fw_id in PREGEN_STYLE:

@@ -8,7 +8,7 @@ set(FM1DECK_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." CACHE PATH "FM1 DECK repo
 set(FM1DECK_UPSTREAM_ROOT "${FM1DECK_REPO_ROOT}/upstream" CACHE PATH "upstream/<id> checkouts")
 set(FM1DECK_GEN_ROOT "${FM1DECK_REPO_ROOT}/build/fwgen" CACHE PATH "generated headers: <root>/<id>/gen")
 set(FM1DECK_FIRMWARES
-    "felucca;jiant;sloop;hortator;mutable;fmini;obervave;coralflower;amb;blop;loafbreaker;frasil;atek303;guru600;ravel;s1vave;clipper;jamtrack;fimba;aisling;echofield;arctic;loom;demake;kwasub;shineon;choppah"
+    "felucca;jiant;sloop;hortator;mutable;fmini;obervave;coralflower;amb;blop;loafbreaker;frasil;atek303;guru600;ravel;s1vave;clipper;jamtrack;fimba;aisling;echofield;arctic;loom;demake;kwasub;shineon;choppah;shrub"
     CACHE STRING "firmware ids to build")
 set(FM1DECK_FW_BUILD_INFO "local" CACHE STRING "build_info string baked into the modules")
 set(FM1DECK_FW_API_DIR "${FM1DECK_REPO_ROOT}/app/src/main/cpp/fw")
@@ -17,6 +17,10 @@ set(FM1DECK_FW_API_DIR "${FM1DECK_REPO_ROOT}/app/src/main/cpp/fw")
 set(FM1DECK_VERSION_PREFIX_hortator "DRUM-")
 
 function(fm1deck_firmware_version id out)
+    if (id STREQUAL "shrub")
+        set(${out} "1.05" PARENT_SCOPE)
+        return()
+    endif()
     set(src "${FM1DECK_UPSTREAM_ROOT}/${id}/firmware/src")
     set(ver "")
     if (DEFINED FM1DECK_VERSION_PREFIX_${id} AND EXISTS "${FM1DECK_UPSTREAM_ROOT}/${id}/VERSION.txt")
@@ -241,6 +245,8 @@ function(fm1deck_add_firmware id)
         set(hal "${CMAKE_CURRENT_SOURCE_DIR}/hal/dinghy/dinghy_web.c")
         set(extra_incs "${up}/firmware/src" "${up}/firmware/hal")
         set(extra_defs "DINGHY_APP_C=\"../../firmware/src/${id}.c\"")
+    elseif (id STREQUAL "shrub")
+        set(hal "${CMAKE_CURRENT_SOURCE_DIR}/hal/shrub/shrub_web.c")
     else()
         message(FATAL_ERROR "fwbuild: unknown firmware id ${id}")
     endif()
