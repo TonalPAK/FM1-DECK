@@ -1,280 +1,123 @@
-<p align="center"><img src="docs/images/hero.png" alt="FM1 DECK: the panel on a phone, GLO latched, the screen's hints lit on the keys" width="100%"></p>
+# FM1 DECK
 
-<p align="center">
-<a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--only-blue.svg" alt="GPL-3.0-only"></a>
-<img src="https://img.shields.io/badge/Android-10%2B-3ddc84.svg" alt="Android 10+">
-<img src="https://img.shields.io/badge/ABI-arm64--v8a-555.svg" alt="arm64-v8a">
-<img src="https://img.shields.io/badge/Ableton-Link-ffb000.svg" alt="Ableton Link">
-<img src="https://img.shields.io/badge/status-preview-ff7a00.svg" alt="preview">
-</p>
+**An Android groovebox with 28 built-in instruments and a four-slot live rack.**
 
-<p align="center">
-<b><a href="../../releases">Download the APK</a></b> ·
-<b><a href="docs/MANUAL.md">Manual</a></b> ·
-<b><a href="CHANGELOG.md">Changelog</a></b> ·
-<b><a href="docs/HOW-IT-WORKS.md">How it works</a></b>
-</p>
+Play a wavetable synth, a drum machine, an acid bassline or a granular sampler on the same touch panel. Pick any
+four different instruments from the library, play them together and save the setup as a session. The app runs
+standalone on the phone and can share its tempo and beat with **Ableton Live** over Wi-Fi.
 
----
+[Download a release for your phone](https://github.com/TonalPAK/FM1-DECK/releases) ·
+[Get the 28-firmware preview APK](https://github.com/TonalPAK/FM1-DECK/actions/runs/44187753550/artifacts/14375528177) ·
+[Preview builds on GitHub Actions](https://github.com/TonalPAK/FM1-DECK/actions/workflows/android.yml?query=branch%3Afeature%2Fupdate-firmwares) ·
+[Changelog](CHANGELOG.md)
 
-**FM1 DECK** puts the community firmwares of the **FM-1** pocket FM synthesizer —
-[Felucca](https://github.com/hugelton/Felucca), [JIANT FM](https://github.com/juanjiant-bit/JIANT),
-[SLOOP](https://github.com/isod89/sloop-fm1) and [Hortator](https://github.com/DeadActive/hortator) — on an Android phone, as a real groovebox you play with your fingers.
+![FM1 DECK touch panel on an Android phone](docs/images/hero.png)
 
-It is not a remake and not an imitation. The authors' own C code runs on the phone, unmodified: the same
-sequencer, the same engines, the same screens, the same button combos. FM1 DECK gives it a body — a touch panel
-with the original controls, a low-latency audio engine, a master bus, and a Wi-Fi link to jam with other phones.
+> **По-русски.** FM1 DECK превращает Android-телефон в грувбокс. В APK уже есть 28 музыкальных прошивок.
+> Выбираешь до четырёх для рэка, переключаешь панель между ними, а остальные слоты продолжают играть.
+> Для игры на телефоне Wi-Fi не нужен. Ableton Link нужен, когда хочется играть в одном темпе с Ableton Live или
+> другим устройством в той же сети.
 
-**New in 0.2: three grooveboxes in one.** Load up to three firmwares into the rack and play them at once — one
-master bus, one tempo, one PLAY. Switch between them with a thumb, mute or solo each, save the whole set as a session.
+## 28 in the library, up to four playing
 
-> **Status: preview.** Built and tested on a Samsung Galaxy M52 5G and a POCO C75. Features marked *planned* are
-> on the [roadmap](#roadmap), not in the app yet.
+In FM1 DECK, a **firmware** is a complete instrument with its own sound engine, presets, display and controls.
+Most come from the community around the FM-1 pocket synthesizer. SHRUB is adapted from its WebAssembly build.
+FM1 DECK runs each instrument as a module inside the Android app. You install one APK and pick instruments
+from its library on the phone.
 
-## See it play
-
-| | |
-|---|---|
-| [![JIANT FM live on an Android phone — screen recording](docs/images/video-screen.png)](https://youtu.be/nUwRVQZXRtA) | [![FM1 DECK on a phone — concept demo](docs/images/video-phone.png)](https://youtu.be/3TPQnUw-PsU) |
-| **[JIANT FM live on an Android phone](https://youtu.be/nUwRVQZXRtA)** — a jam, straight from the screen | **[FM-1 firmwares as a groovebox on Android](https://youtu.be/3TPQnUw-PsU)** — the same, filmed on the phone |
-
-## Why this exists
-
-Android has very few grooveboxes, and almost none with a character of their own. The FM-1 firmwares have one:
-a few buttons that open whole layers, keys that double as a control surface, songs built without a computer, a
-little screen that tells you everything. I'm just a groovebox lover who wanted to play them anywhere — on the bus,
-on the couch, without the keyboard in my bag.
-
-So here it is, open source. Play it, fork it, grow it.
-
-## Quick start — your first five minutes
-
-1. **Install and open.** The app starts in landscape with the panel and a firmware already running. Turn the phone
-   volume up; drag **MASTER** (top-left knob) up for more.
-2. **Play.** Touch the keys at the bottom — the lower row is F G A B C D E…, the upper row the sharps. Chords work.
-3. **Press PLAY/STOP.** The firmware's sequencer runs its current pattern. Press it again to stop.
-4. **Open a layer.** Hold **GLO** (or FX, EDIT, SEQ…): the screen shows that layer's page, and the keys it offers
-   light up with their letters — the screen says *F SOLO*, the lit **F** key is solo. Let go to close.
-   With the phone in both hands, tap **F** first, then GLO — it stays open until you tap F again.
-5. **Turn the knobs.** KNOB 1–4 edit what the screen shows; SELECT, PRESETS and ALGORITHM browse. Drag up/down.
-6. **Change the sound.** Turn **PRESETS** for another sound; **OCT− / OCT+** shift the keyboard.
-7. **Open Settings** — the small dot in the top-left corner. Try another **Firmware**, another **Skin**, a
-   **Master** preset (Loud, Warm, Crush…).
-8. **Jam with a friend.** Both phones on the same Wi-Fi → Settings → **MIDI → LINK ON** on both → PLAY on either.
-
-From there, each firmware's own manual opens its world: [Felucca](https://github.com/hugelton/Felucca) ·
-[JIANT FM](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md) · [SLOOP](https://github.com/isod89/sloop-fm1) ·
-[Hortator](https://github.com/DeadActive/hortator).
-
-## Where is what
-
-<p align="center"><img src="docs/images/skin-1-classic.png" alt="The panel, classic layout" width="100%"></p>
-
-| On the panel | What it is | What for |
-|---|---|---|
-| **Screen** (240×240) | The firmware's own display | Every page, value and hint of the firmware |
-| **MASTER** | Volume pot | Output level, like the hardware's |
-| **SELECT · PRESETS · ALGORITHM** | Endless encoders | Browse pages, sounds, FM algorithms (the firmware decides) |
-| **KNOB 1–4** | Endless encoders | The four values on the current page |
-| **FX SCL ENV LFO EDIT GLO** | Layer buttons (top row) | Hold to open a layer; the keys become its functions |
-| **HOME SAVE ARP SEQ PLAY REC** | Buttons (bottom row) | Home page, save/load, arpeggiator, sequencer, transport, record |
-| **OCT− / OCT+** | Octave buttons, own island | Keyboard octave, and the firmware's combos |
-| **F** | Latch (app) | Keeps the next buttons held until you tap them or F again |
-| **27 keys** F3–G5 | Keyboard with note names | Notes; in a layer, functions — the lit letters |
-| **Dot, top-left** | Settings (app) | Session, Skin, Firmware, Audio, Master, MIDI/Link, About; green while Link is on; the bar under it is the DSP load |
-| **Triangle, top-right** | The rack (app) | Opens the drawer: the three slots, tempo, PLAY, mute / solo |
-
-| In Settings | What for |
-|---|---|
-| **Session** | Save the whole rack under a name — every firmware with its flash, volumes, mute / solo, tempo — and load it back |
-| **Skin** | Choose one of seven layouts; keyboard height, knob sensitivity, key light colour, beat marks, haptics |
-| **Firmware** | Pick the firmware of the slot you play: JIANT FM, Felucca, SLOOP or Hortator (each keeps its own projects) |
-| **Audio** | Master-bus quality ×1–×8; stream, latency and CPU — check here if you hear crackles |
-| **Master** | The mastering chain: presets, A/B, bypass, the scope that shows peaks being pressed |
-| **MIDI** | Ableton Link — play in sync with other phones and apps |
-| **About** | Versions, credits, licences |
-
-The full manual: **[docs/MANUAL.md](docs/MANUAL.md)**.
-
-## Four firmwares, one panel
-
-<p align="center"><img src="docs/images/firmwares.png" alt="The screens of JIANT FM, Felucca, SLOOP and Hortator" width="100%"></p>
-
-| | Firmware | Its soul | Author |
-|---|---|---|---|
-| ![](docs/images/firmware-jiant.png) | **JIANT FM** 0.6.75 | A "bio-synthetic operating system": many engines, mutation, songs with ARRANGE and UNDO, made for playing live | [juanjiant-bit](https://github.com/juanjiant-bit/JIANT) |
-| ![](docs/images/firmware-felucca.png) | **Felucca** 1.6 | The original alternative firmware: FM voices, a step sequencer with chance and ratchets, MIDI learn, insert effects | [Leo Kuroshita / Hügelton Instruments](https://github.com/hugelton/Felucca) |
-| ![](docs/images/firmware-sloop.png) | **SLOOP** 2.6 | A live groovebox for any style: tracks, loops, an arranger, 12 engines | [isod89](https://github.com/isod89/sloop-fm1) |
-| ![](docs/images/firmware-hortator.png) | **Hortator** DRUM-0.16.0 | An eight-track drum machine: steps, Grids, an ACID bass line, PERFORM | [DEADACTIVE](https://github.com/DeadActive/hortator) |
-
-Each keeps its own 1 MB flash — your projects and presets wait for you when you come back.
-
-## Three at once — the rack
-
-<p align="center"><img src="docs/images/rack.png" alt="The rack drawer: DSP load, shared tempo, three slots with level, CPU, mute and solo" width="100%"></p>
-
-- **Up to three firmwares play together**, summed into the one master bus. The panel plays the slot you pick; the
-  others keep running.
-- **Tap the triangle** in the top-right corner: the drawer slides out. Tap a slot to play it, the ▾ arrow to choose
-  its firmware, **M** / **S** to mute or solo it, swipe a slot sideways to switch it off. Tap anywhere empty to close.
-- **One clock.** With two or more firmwares, tempo and PLAY / STOP are shared: PLAY on any of them starts them all,
-  and a firmware you add while they play comes in on the next bar. Drag the BPM in the drawer to change the tempo;
-  with Link on, the clock is the Link session's.
-- **DSP meter** under the settings dot and in the drawer: how much of the phone's audio time the rack uses, so you
-  know when a fourth idea is one too many.
-- **Sessions** (Settings → Session): one tap saves everything — the three machines with their flash, volumes,
-  mute / solo, tempo — under a name, one tap brings it back.
-
-<p align="center"><img src="docs/images/settings-session.png" alt="Settings → Session: save the rack under a name, load or delete saved sessions" width="100%"></p>
-
-## Play it like the hardware
-
-<p align="center"><img src="docs/images/panel-glo-latched.png" alt="GLO latched with F: the GLO page on screen, the keys it offers lit with their letters" width="100%"></p>
-
-- **The whole FM-1 panel**: the 240×240 screen, 12 buttons with their real LEDs (lit, dim, breathing), SELECT,
-  PRESETS, ALGORITHM, KNOB 1–4, MASTER, OCT−/OCT+, 27 keys from F3 to G5.
-- **Multitouch** like on the device: hold a layer button with one finger, press keys with the others, play chords.
-- **Note names on the keys.** The firmwares' screens name keys by their notes — *F SOLO*, *C ALL*, *G UNDO*. Those
-  letters light up on the keys the moment the firmware offers them, so the hint on the screen points straight at
-  the key. While you play, the letters glow with the LEDs.
-- **F — latch.** Holding a phone with two hands, you have no finger left to hold GLO *and* turn a knob. Tap **F**,
-  tap GLO: it stays held until you let it go. One thumb, the whole layer.
-- **Knobs that feel right**: drag up or down, fine steps on hold, a glow while you touch. Their names follow the
-  firmware's page.
-- **Key light in your colour.** The key LEDs can glow red, orange, amber, green, cyan, blue, violet or pink instead of
-  white, and thin marks split the 16 white keys into beats — a running pattern reads at a glance.
-
-<p align="center"><img src="docs/images/key-light.png" alt="Hortator's sequencer on the keys in cyan, with beat marks every four steps" width="100%"></p>
-
-## Seven layouts
-
-The same controls in six landscape arrangements, plus **Portrait** — a gamepad layout for the phone held upright.
-The keyboard always spans the full width.
-
-| | | |
-|---|---|---|
-| ![](docs/images/skin-1-classic.png) **Classic** | ![](docs/images/skin-2-knobs-top.png) **Knobs on top** | ![](docs/images/skin-3-screen-left.png) **Screen left** |
-| ![](docs/images/skin-4-screen-left-knobs-top.png) **Screen left, knobs on top** | ![](docs/images/skin-5-screen-center.png) **Screen in the middle** | ![](docs/images/skin-6-screen-center-buttons-top.png) **Screen in the middle, buttons on top** |
-
-Each one is a small JSON file — [write your own](app/src/main/assets/skins/_schema.md) and import it.
-
-## Two phones, one groove — Ableton Link
-
-<p align="center"><img src="docs/images/settings-midi.png" alt="Settings → MIDI: Ableton Link, tempo, beat lights, start quantum" width="80%"></p>
-
-Put two phones on the same Wi-Fi, switch **LINK** on both, press **PLAY** on either one — both start together on
-the next bar. Change the tempo on one, the other follows. No leader, no cables, no setup. It is
-[Ableton Link](https://www.ableton.com/link/), so the same works with Ableton Live and hundreds of music apps.
-
-Under the hood the session becomes a MIDI clock for the firmware, exactly as if a clock cable were plugged into the
-FM-1 — compensated for each phone's own audio latency (13 ms on one test phone, 92 ms on the other).
-
-## A master bus with a view
-
-<p align="center"><img src="docs/images/settings-master.png" alt="Settings → Master: the scope, the chain I/O SAT SPEC LIMIT CLIP, the saturation curve" width="100%"></p>
-
-The firmware's sound goes through a mastering chain of its own:
-
-**dynamic saturation** (drive that follows the level) → **spectral clipper** (multiband, transients returned) →
-**look-ahead limiter** (true-peak aware) → **final clipper**.
-
-The scope shows what it does: the signal before in blue, after in cream, gain reduction in red from the top — you
-*see* the peaks being pressed. Seven presets (Default, Clean, Warm, Punch, Loud, Crush, Glue) and your own, A/B,
-bypass, loudness-matched auto-gain, oversampling ×1–×8.
-
-## Settings at a glance
-
-| | |
-|---|---|
-| ![Skin](docs/images/settings-skin.png) **Skin** — layouts as schematics, keyboard height, knob feel, haptics | ![Firmware](docs/images/settings-firmware.png) **Firmware** — Felucca, JIANT FM, SLOOP, Hortator |
-| ![Audio](docs/images/settings-audio.png) **Audio** — quality, stream, latency, CPU budget | ![About](docs/images/settings-about.png) **About** — versions, credits, licences |
-
-Open Settings with the small dot in the top-left corner of the panel (it turns green while Link is on).
-
-## Install
-
-1. Download `FM1-DECK-<version>-arm64.apk` from [Releases](../../releases).
-2. Open it on the phone; allow installing from your browser or file manager when Android asks.
-3. Android 10 or newer, 64-bit ARM. No permissions at start; the network is used only while Link is on.
-
-Wired headphones or a cable to a speaker work best — Bluetooth adds 150–250 ms of delay.
-
-## How it works
-
-```
- touch panel  ──buttons · keys · knobs──▶  firmware module  ──▶  master bus  ──▶  Oboe / AAudio
- (Compose)    ◀──── screen · LEDs ───────  libfw_<id>.so          SAT · SPEC        48 kHz, low latency
-                                           the author's C          LIMIT · CLIP
-                                           + its emulator HAL      (oversampled)
-                       Ableton Link  ──▶  MIDI clock (24 PPQN, start, stop) into the firmware
+```mermaid
+flowchart LR
+    Library["28 built-in instruments"] --> Rack["Rack: up to four playing"]
+    Panel["Touch panel"] -->|"Plays the selected slot"| Rack
+    Rack --> Mix["Master bus → phone audio"]
+    Live["Ableton Live on your computer"] <-->|"Ableton Link: tempo and beat"| Clock["Shared clock"]
+    Clock --> Rack
 ```
 
-Every FM-1 firmware ships a browser emulator whose hardware layer models the device — clock, audio buffers, button
-matrix, LEDs, LCD, flash. FM1 DECK compiles that same layer with the firmware sources into a native Android module
-and drives it from the audio thread, sub-block by sub-block, with the hardware's input timing. Nothing in the
-firmware is patched; updating to a new version of a firmware is a rebuild.
+For example, put **Hortator** on drums, **ATEK303** on bass and **SHRUB** on the lead. Add **ECHOFIELD** for texture
+or leave the fourth slot empty. All the active slots mix to the phone's stereo output. The selected slot gets the
+keys, knobs and buttons, and its display appears on the panel. Each slot has a level, mute and solo. With two or
+more slots, the rack provides a shared clock even offline. Settings → **Session** saves the slot choices, levels,
+mute and solo, tempo and each loaded instrument's saved state.
 
-More: **[How it works](docs/HOW-IT-WORKS.md)** · the full design documents (in Russian) in [docs/](docs/README.md).
+## Start playing
+
+1. Install the APK on an Android 10+ phone with a 64-bit ARM processor. **Releases** has signed builds. For the
+   28-firmware preview, sign in to GitHub, download the Actions artifact and unzip it to get `app-debug.apk`.
+2. Open the app and play the keys. **PRESETS** changes the sound, **OCT− / OCT+** moves the keyboard, and
+   **KNOB 1–4** edits the current page. The screen comes from the selected instrument. Knob captions follow the
+   current page on ports that provide parameter data.
+3. Tap the **triangle at the top right** to open the rack. Use a slot's arrow to choose an instrument, then tap the
+   slot to put it on the panel. **M** mutes and **S** solos.
+4. With two or more slots, drag the rack's **BPM** to set the tempo and tap its transport to start or stop the
+   instruments that follow it. Load or record a pattern in an instrument if its sequencer has nothing to play.
+5. Tap the **dot at the top left** for Settings. Try a **Skin**, adjust the **Master** chain or save your setup
+   under **Session**. Watch the DSP meter if several instruments cause crackles.
+
+[Watch a JIANT FM jam on the phone](https://youtu.be/nUwRVQZXRtA) ·
+[See the touch controls in action](https://youtu.be/3TPQnUw-PsU) ·
+[Read the panel manual](docs/MANUAL.md)
+
+## Play alongside Ableton Live
+
+1. Put the phone and the computer running **Ableton Live** on the same local network.
+2. On the phone choose **Settings → MIDI → LINK ON**. In Live, turn on **Link**. Check the peer count on the phone.
+3. Set the tempo from either device. To share PLAY and STOP too, enable **Start Stop Sync** in Live and use the
+   rack transport on the phone.
+
+FM1 DECK uses Link for musical timing. The phone plays its own audio, and recording that sound in Live requires a
+separate audio connection. Link here carries no audio or MIDI notes. Clock support varies by firmware. Some
+instruments need their external clock setting enabled, and a few keep their own transport. SHRUB takes the rack's
+BPM directly and keeps the preset tempo for standalone use.
+
+[FM1 DECK sync guide](docs/LINK.md) ·
+[Ableton Live Link setup](https://www.ableton.com/en/live-manual/12/synchronizing-with-link-tempo-follower-and-midi/)
+
+## What's in the library
+
+| What you want to play | Built-in instruments |
+|---|---|
+| Sequences, songs and full arrangements | Felucca, JIANT FM, SLOOP, LOOM-8, Ravel, JAMTRACK |
+| Wavetables, analog-style voices and strings | SHRUB, FMini-1, Guru-600, OberVave, S1Vave, Clipper, Shine On |
+| Drums, breaks and bass | Hortator, CHOPPAH, LOAF BREAKER, ATEK303, K-WASUB |
+| Chords and tuned percussion | CoralFlower, Blop, FiMba-1 |
+| Ambient, granular and generative textures | Mutable Dreams, AMB-1, FRASIL, AISLING, ECHOFIELD, Arctic Scream, Demake |
+
+The rack's picker shows each instrument's thumbnail and version. For the authors and source projects, see the
+[firmware credits and licences](THIRD_PARTY_LICENSES.md).
+
+## What the phone adds
+
+- A multitouch panel with 27 keys, a 240×240 firmware display, switchable layouts and a latch for held buttons.
+- Per-instrument storage for presets and projects, plus sessions that bring the whole rack back.
+- A stereo master bus with saturation, spectral clipping, a look-ahead limiter and a final clipper. The Master
+  tab shows the effect on the signal and offers presets, A/B and bypass.
+
+![The master bus and its signal scope](docs/images/settings-master.png)
 
 ## Build from source
 
 ```bash
 git clone --recursive https://github.com/TonalPAK/FM1-DECK.git
 cd FM1-DECK
-python3 tools/fwgen/fwgen.py all            # the firmwares' generated fonts and tables
-./gradlew assembleDebug -Pfm1deckAbis=arm64-v8a
+python3 tools/fwgen/fwgen.py all
+./gradlew assembleDebug -Pfm1deckAbis=arm64-v8a --no-daemon
 ```
 
-Needs Android Studio (JDK 21), NDK 28, CMake 3.22+, Python 3 with Pillow, numpy and fonttools (on Windows, run the
-`fwgen` step in WSL). Tests: `./gradlew test` and [`native-tests/`](native-tests). Releasing a signed APK:
-[docs/RELEASING.md](docs/RELEASING.md). Want to help? [CONTRIBUTING.md](CONTRIBUTING.md).
+Use JDK 21, Android SDK and NDK 28.2, CMake, Ninja and Python with Pillow (RAQM), NumPy and fontTools. On Windows,
+use WSL for firmware header generation and `gradlew.bat` for the Android build. The APK is written to
+`app/build/outputs/apk/debug/app-debug.apk`. Remove the ABI override to build ARM64 and x86_64. GitHub Actions runs
+`assembleDebug`, the host tests and the native suite, then publishes `app-debug`.
 
-<details>
-<summary><b>Project layout</b></summary>
+The Android host uses the firmware's original sources where available, with adapters for the hardware interface.
+Each module has its own audio and persistent state. The phone loads the modules it needs, renders them into the
+rack and sends the mix to Android through Oboe.
 
-```
-app/                     Android app: Kotlin + Jetpack Compose UI, C++17 engine
-  src/main/cpp/fw/       firmware host — Fm1FirmwareApi.h (ABI 1), FirmwareSlot
-  src/main/cpp/dsp/      master bus
-  src/main/cpp/engine/   Oboe engine, Ableton Link → MIDI clock
-  src/main/assets/skins/ six layouts, palettes
-fwbuild/                 builds each firmware into libfw_<id>.so (glue, profiles, SLOOP's and Hortator's host HALs)
-upstream/                Felucca, JIANT, SLOOP, Hortator — submodules, never edited
-third_party/link/        Ableton Link
-native-tests/            C++ tests (DSP, clock, firmware slot)
-docs/                    manual, how it works, design docs, screenshots
-```
-</details>
+[Architecture](docs/ARCHITECTURE.md) · [Firmware module build](fwbuild/README.md) · [Testing](docs/TESTING.md) ·
+[Contributing](CONTRIBUTING.md)
 
-## Roadmap
+## Credits and licence
 
-- [x] Felucca, JIANT FM, SLOOP, Hortator on the phone, switchable, each with its own flash
-- [x] The full panel, six layouts, note names, F latch
-- [x] Master bus with scope, presets, A/B
-- [x] Ableton Link: tempo, phase, start/stop
-- [x] The rack: three firmwares at once, shared clock, mute / solo, sessions
-- [ ] Firmware updates from a file, flash backups *(planned)*
-- [ ] Hints on keys and knobs for every layer *(planned)*
-- [ ] Recorder: WAV of what you play *(planned)*
-- [ ] USB / Bluetooth MIDI, network MIDI notes between phones *(planned)*
-- [ ] Sync calibration by microphone *(planned)*
-
-## Credits
-
-FM1 DECK only gives these firmwares a new home — all the music-making inside is their authors' work. If you enjoy
-them, go star their repositories and support them:
-
-- **Felucca** — Leo Kuroshita (@kurogedelic), Hügelton Instruments · [hugelton/Felucca](https://github.com/hugelton/Felucca)
-- **JIANT FM** — juanjiant-bit · [juanjiant-bit/JIANT](https://github.com/juanjiant-bit/JIANT) · [Ko-fi](https://ko-fi.com/juanjiant)
-- **SLOOP** — isod89 · [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1)
-- **Hortator** — DEADACTIVE · [DeadActive/hortator](https://github.com/DeadActive/hortator) · [play it in the browser](https://deadactive.github.io/hortator/)
-- **Ableton Link** — Ableton AG · **Oboe** — Google · **DotGothic16** font — The DotGothic16 Project Authors
-
-All third-party components and their licences: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
-
-FM1 DECK is an independent fan project, not affiliated with or endorsed by the maker of the FM-1 or by the firmware
-authors. "FM-1" names the hardware these firmwares were written for; trademarks belong to their owners.
-
-## License
-
-[GPL-3.0-only](LICENSE), like the firmwares it runs. Use it, study it, change it, share it — and keep it open.
+FM1 DECK is an independent project. The instruments are the work of their respective firmware authors. The app is
+licensed under [GPL-3.0-only](LICENSE). Firmware, assets and other third-party components have their own terms,
+listed in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
