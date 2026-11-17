@@ -17,6 +17,10 @@
 #include <oboe/Oboe.h>
 #endif
 
+namespace mk3 {
+class Mk3Bridge;
+}
+
 namespace fm1deck {
 
 struct StreamInfo {
@@ -96,6 +100,7 @@ public:
 
     dsp::MasterBus* masterBus() noexcept { return &bus_; }
     LinkSync* link() noexcept { return &link_; }
+    mk3::Mk3Bridge* mk3Bridge() noexcept { return mk3Bridge_.get(); }
     /** Control thread: refresh Link's output latency from the stream (Oboe's estimate + the master bus). */
     void updateOutputLatency();
 
@@ -127,6 +132,7 @@ private:
     mutable std::mutex streamMutex_;
     std::atomic<bool> isRunning_{false};
     std::atomic<bool> reopenNeeded_{false};
+    std::unique_ptr<mk3::Mk3Bridge> mk3Bridge_;
     int targetSampleRate_{48000};
     int targetBufferSize_{0};
 

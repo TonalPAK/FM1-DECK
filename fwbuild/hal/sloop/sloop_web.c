@@ -165,17 +165,31 @@ static void irq_restore(uint32_t f) { (void)f; }
 static uint32_t fl_jedec_ram(void) { return 0x856014u; }             /* the FM-1's part (project.c) */
 static void fl_plain_window_init(void) {}
 #define FL_FAR(fn) (fn)
+#define FL_JEDEC_OK(id) ((id) == 0x856014u || (id) == 0xB36014u)
+#define ST_XIP_PTR(off) ((const void *)(nor + (off)))
 #include "../../firmware/src/storage.c"
 #include "../../firmware/src/upreset.c"
 #include "../../firmware/src/project.c"
 
 /* ------------------------------------------------- main.c and its HAL --- */
-typedef struct { uint32_t magic, count, vec, pc, emu, dbg, rets; } fm1_crash_t;
+typedef struct { uint32_t magic, count, vec, pc, emu, dbg, rets, sp; } fm1_crash_t;
 #define FM1_CRASH_MAGIC 0x43525348u
 static fm1_crash_t fm1_crash;                     /* (none: main.c boot_leds runs the sweep) */
 static struct { uint8_t p3_rst, wdt_con; uint32_t rst_src; } fm1_boot;
 uint32_t _data_start[1], _data_end[1], _data_load[1], _bss_start[1], _bss_end[1];
 uint32_t _pool_start[1], _pool_end[1], _rt_start[1], _rt_end[1], _rt_load[1];
+uint32_t _lr_start[1], _lr_end[1], _c1_start[1], _c1_end[1], _c1_load[1];
+char _ustack_lo[1], _ustack_top[1], _sstack_lo[1], _sstack_top[1];
+static uint32_t fm1_sp(void) { return 0; }
+static uint32_t fm1_ssp(void) { return 0; }
+static uint32_t fm1_usp(void) { return 0; }
+static uint32_t fm1_c1_on;
+static void fm1_cpu1_bar(void) {}
+static void fm1_cpu1_halt(void) {}
+static void fm1_supplies_stock(void) {}
+static volatile uint32_t cpu1_state, cpu1_timeouts;
+static struct { uint32_t bad; } fm1_c1_mb;
+static void cpu1_boot(void) {}
 static uint32_t web_master_adc = 700;   /* MASTER, 0..1023 as the ADC reads it */
 enum { FM1_ADC_BATT = 3, FM1_ADC_MASTER = 4 };
 static int32_t fm1_adc_read(uint32_t ch) { return ch == FM1_ADC_MASTER ? (int32_t)web_master_adc : 620; }

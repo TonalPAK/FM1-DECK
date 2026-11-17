@@ -54,7 +54,17 @@ data class AppSettings(
         if (slots.all { it.isEmpty() }) slots[0] = activeFwId.takeIf(known) ?: DEFAULT_FW_ID
         val masters = List(RACK_SLOTS) { i -> rackMasters.getOrElse(i) { DEFAULT_MASTER_ADC }.coerceIn(0, 1023) }
         val focus = rackFocus.takeIf { it in slots.indices && slots[it].isNotEmpty() } ?: slots.indexOfFirst { it.isNotEmpty() }
-        return copy(rack = slots, rackMasters = masters, rackFocus = focus, activeFwId = slots[focus], masterAdc = masters[focus])
+        var occupiedMask = 0
+        for (i in slots.indices) if (slots[i].isNotEmpty()) occupiedMask = occupiedMask or (1 shl i)
+        return copy(
+            rack = slots,
+            rackMasters = masters,
+            rackFocus = focus,
+            activeFwId = slots[focus],
+            masterAdc = masters[focus],
+            rackMute = rackMute and occupiedMask,
+            rackSolo = rackSolo and occupiedMask
+        )
     }
 
     /** Focus on [slot] (a filled one). */
@@ -77,7 +87,7 @@ data class AppSettings(
 
     companion object {
         /** Slots the rack offers (the native engine has room for AudioEngine::kSlots). */
-        const val RACK_SLOTS = 3
+        const val RACK_SLOTS = 4
         const val CURRENT_SCHEMA = 1
         const val DEFAULT_SKIN_ID = "classic"
         const val DEFAULT_PALETTE_ID = "graphite"

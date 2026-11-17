@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,14 +56,17 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.fm1deck.engine.LinkController
 import io.github.fm1deck.engine.LinkStatus
 import io.github.fm1deck.fw.FirmwareCatalog
+import io.github.fm1deck.fw.rememberFirmwareThumb
 import io.github.fm1deck.settings.AppSettings
 import io.github.fm1deck.ui.panel.render.PanelStyle
 import io.github.fm1deck.ui.panel.skin.Palette
@@ -154,8 +159,8 @@ object RackChrome {
         }
         drawPath(tri, ink)
         val n = rack.size
-        val dotR = s * 0.045f
-        val pitch = s * 0.15f
+        val dotR = if (n >= 4) s * 0.040f else s * 0.045f
+        val pitch = if (n >= 4) s * 0.130f else s * 0.15f
         val dy = top + (bottom - top) * 0.80f
         for (i in 0 until n) {
             val c = Offset(cx + pitch * (i - (n - 1) / 2f), dy)
@@ -231,8 +236,8 @@ fun RackDrawer(
                     // Taps between the cells stay in the drawer
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 7.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp)
+                    .padding(horizontal = 7.dp, vertical = 5.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f).padding(end = 7.dp)) { DspHeader(palette, panelState) }
@@ -453,21 +458,21 @@ private fun SlotCell(
                         }
                     )
                 }
-                .padding(start = 9.dp, end = 5.dp, top = 6.dp, bottom = 6.dp)
+                .padding(start = 8.dp, end = 5.dp, top = 4.dp, bottom = 4.dp)
         ) {
             // The number, the firmware's three letters, and the drop-down arrow: its firmware list
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${slot + 1}",
                     color = if (focused) palette.buttonLabel else palette.buttonLabelDim,
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     fontFamily = PanelStyle.dotFont
                 )
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(
                     entry?.shortName ?: "EMPTY",
                     color = if (entry == null) palette.buttonLabelDim else palette.buttonLabel.copy(alpha = if (focused) 1f else 0.75f),
-                    fontSize = if (entry == null) 13.sp else 17.sp,
+                    fontSize = if (entry == null) 12.sp else 15.sp,
                     fontFamily = PanelStyle.dotFont,
                     maxLines = 1,
                     modifier = Modifier.weight(1f)
@@ -475,10 +480,10 @@ private fun SlotCell(
                 DropArrow(palette, onPick)
             }
             if (entry != null) {
-                Spacer(Modifier.height(5.dp))
+                Spacer(Modifier.height(3.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Canvas(Modifier.fillMaxWidth().height(5.dp)) {
+                        Canvas(Modifier.fillMaxWidth().height(4.dp)) {
                             val level = levelFraction(panelState.slotLevels.getOrElse(slot) { 0f })
                             val r = CornerRadius(size.height / 2f, size.height / 2f)
                             drawRoundRect(palette.background, cornerRadius = r)
@@ -490,7 +495,7 @@ private fun SlotCell(
                                 )
                             }
                         }
-                        Spacer(Modifier.height(3.dp))
+                        Spacer(Modifier.height(2.dp))
                         val load = panelState.slotLoads.getOrElse(slot) { 0f }
                         Text(
                             "CPU ${(load * 100f).roundToInt()}%",
@@ -514,14 +519,14 @@ private fun SlotCell(
 private fun DropArrow(palette: Palette, onClick: () -> Unit) {
     Box(
         Modifier
-            .width(40.dp)
-            .height(32.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .width(34.dp)
+            .height(24.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(palette.background)
             .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(Modifier.width(16.dp).height(10.dp)) {
+        Canvas(Modifier.width(13.dp).height(8.dp)) {
             val path = Path().apply {
                 moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2f, size.height); close()
             }
@@ -535,14 +540,14 @@ private fun DropArrow(palette: Palette, onClick: () -> Unit) {
 private fun GateButton(label: String, on: Boolean, lit: Color, palette: Palette, onClick: () -> Unit) {
     Box(
         Modifier
-            .width(32.dp)
-            .height(28.dp)
-            .clip(RoundedCornerShape(7.dp))
+            .width(28.dp)
+            .height(22.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(if (on) lit else palette.background)
             .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = if (on) palette.background else palette.buttonLabelDim, fontSize = 13.sp, fontFamily = PanelStyle.dotFont)
+        Text(label, color = if (on) palette.background else palette.buttonLabelDim, fontSize = 12.sp, fontFamily = PanelStyle.dotFont)
     }
 }
 
@@ -557,36 +562,67 @@ private fun FirmwarePicker(
     val current = settings.rack.getOrElse(slot) { "" }
     val filled = settings.rack.count { it.isNotEmpty() }
     Text("SLOT ${slot + 1}", color = palette.buttonLabelDim, fontSize = 10.sp, fontFamily = PanelStyle.dotFont)
+    PickRow(label = "‹ BACK", sub = null, selected = false, palette = palette, onClick = onBack)
+    // A slot can be switched off while another one still plays
+    if (current.isNotEmpty() && filled > 1) {
+        PickRow(label = "OFF", sub = "SLOT EMPTY", selected = false, palette = palette, onClick = { onPick("") })
+    }
     for (fw in FirmwareCatalog.builtins) {
         val elsewhere = settings.rack.indexOf(fw.id).takeIf { it >= 0 && it != slot }
         PickRow(
             label = fw.displayName.uppercase(),
-            sub = if (elsewhere != null) "IN SLOT ${elsewhere + 1}" else null,
+            sub = if (elsewhere != null) "IN SLOT ${elsewhere + 1}" else fw.version.takeIf { it.isNotEmpty() },
+            thumbAsset = fw.thumbAsset,
             selected = fw.id == current,
             palette = palette,
             onClick = { if (fw.id != current) onPick(fw.id) else onBack() }
         )
     }
-    // A slot can be switched off while another one still plays
-    if (current.isNotEmpty() && filled > 1) {
-        PickRow(label = "OFF", sub = "SLOT EMPTY", selected = false, palette = palette, onClick = { onPick("") })
-    }
-    PickRow(label = "‹ BACK", sub = null, selected = false, palette = palette, onClick = onBack)
 }
 
 @Composable
-private fun PickRow(label: String, sub: String?, selected: Boolean, palette: Palette, onClick: () -> Unit) {
+private fun PickRow(
+    label: String,
+    sub: String?,
+    selected: Boolean,
+    palette: Palette,
+    thumbAsset: String? = null,
+    onClick: () -> Unit
+) {
     val shape = RoundedCornerShape(8.dp)
-    Column(
+    val thumb = thumbAsset?.let { rememberFirmwareThumb(it) }
+    Row(
         Modifier
             .fillMaxWidth()
             .clip(shape)
             .background(if (selected) palette.frame else palette.button)
             .border(if (selected) 1.5.dp else 0.dp, if (selected) palette.buttonLabel.copy(alpha = 0.6f) else Color.Transparent, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 7.dp, vertical = 7.dp)
+            .padding(horizontal = 7.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = palette.buttonLabel, fontSize = 15.sp, fontFamily = PanelStyle.dotFont, maxLines = 1)
-        if (sub != null) Text(sub, color = palette.buttonLabelDim, fontSize = 8.sp, fontFamily = PanelStyle.dotFont, maxLines = 1)
+        if (thumb != null) {
+            Image(
+                bitmap = thumb,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(palette.background)
+            )
+            Spacer(Modifier.width(7.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                label,
+                color = palette.buttonLabel,
+                fontSize = 12.sp,
+                fontFamily = PanelStyle.dotFont,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (sub != null) Text(sub, color = palette.buttonLabelDim, fontSize = 8.sp, fontFamily = PanelStyle.dotFont, maxLines = 1)
+        }
     }
 }

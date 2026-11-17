@@ -63,6 +63,7 @@ class FlashStore(private val context: Context) {
         val writes = NativeBridge.nativeFwNorWrites(slot)
         if (writes > lastSavedWrites[slot]) {
             val norSize = getModuleNorSize(slot)
+            NativeBridge.nativeFwSaveNow(slot)
             val snapshot = NativeBridge.nativeFwSnapshotNor(slot)
             if (snapshot != null) {
                 // Re-check active id after snapshot

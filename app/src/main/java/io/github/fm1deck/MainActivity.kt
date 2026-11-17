@@ -45,6 +45,7 @@ import io.github.fm1deck.ui.panel.skin.PaletteRepository
 import io.github.fm1deck.ui.panel.skin.Skin
 import io.github.fm1deck.ui.panel.skin.SkinRepository
 import io.github.fm1deck.ui.settings.SettingsScreen
+import io.github.fm1deck.ui.settings.SettingsTab
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.io.File
@@ -59,6 +60,8 @@ class MainActivity : ComponentActivity() {
     private var skinsState = mutableStateOf<List<Skin>>(emptyList())
     private lateinit var sessionStore: SessionStore
     private val sessionsState = mutableStateOf<List<Session>>(emptyList())
+    private val debugSettingsTabState = mutableStateOf<SettingsTab?>(null)
+    private val debugRackOpenState = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,8 +118,12 @@ class MainActivity : ComponentActivity() {
             val skins by skinsState
             // The focused rack slot's firmware: the one the panel plays and shows
             val activeFirmware = FirmwareCatalog.findById(settings.activeFwId) ?: FirmwareCatalog.defaultFirmware
+            val debugTab by debugSettingsTabState
+            val debugRack by debugRackOpenState
             var showSettings by remember { mutableStateOf(false) }
             var showRack by remember { mutableStateOf(false) }
+            LaunchedEffect(debugTab) { if (debugTab != null) showSettings = true }
+            LaunchedEffect(debugRack) { if (debugRack) showRack = true }
 
             val palettes = remember { PaletteRepository.loadFromAssets(assets) }
             val basePalette = palettes[settings.activePaletteId] ?: PaletteRepository.GRAPHITE
@@ -129,9 +136,9 @@ class MainActivity : ComponentActivity() {
 
             val panelState = rememberPanelState(active = true)
 
-            // Update button names depending on active firmware (SLOOP has SEL)
+            // Update button names depending on active firmware (SLOOP / fm1-base / etc. have SEL)
             LaunchedEffect(activeFirmware) {
-                if (activeFirmware.id == "sloop") {
+                if (activeFirmware.usesSelLabel) {
                     panelState.buttonNames = listOf(
                         "FX", "SEL", "ENV", "LFO", "EDIT", "GLO",
                         "HOME", "SAVE", "ARP", "SEQ", "PLAY\nSTOP", "REC"
@@ -285,7 +292,11 @@ class MainActivity : ComponentActivity() {
                             sessionStore.delete(session.id)
                             sessionsState.value = sessionStore.list()
                         },
-                        onClose = { showSettings = false }
+                        initialTab = debugTab ?: SettingsTab.SESSION,
+                        onClose = {
+                            showSettings = false
+                            debugSettingsTabState.value = null
+                        }
                     )
                 }
             }
@@ -399,6 +410,15 @@ class MainActivity : ComponentActivity() {
             }
             if (focusExtra >= 0) next = next.withFocus(focusExtra)
             updateSettings(next)
+        }
+        val settingsExtra = intent?.getStringExtra("settings")
+        if (settingsExtra != null) {
+            debugSettingsTabState.value = SettingsTab.entries.firstOrNull {
+                it.name.equals(settingsExtra, ignoreCase = true) || it.title.equals(settingsExtra, ignoreCase = true)
+            } ?: SettingsTab.FIRMWARE
+        }
+        if (intent?.hasExtra("rackOpen") == true) {
+            debugRackOpenState.value = intent.getBooleanExtra("rackOpen", false)
         }
         if (skinExtra != null || paletteExtra != null || framesExtra != null) {
             val current = settingsState.value

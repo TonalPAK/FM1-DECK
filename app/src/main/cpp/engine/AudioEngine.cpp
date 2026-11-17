@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "AudioEngine.h"
+#include "../mk3/Mk3Bridge.h"
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <thread>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
@@ -25,6 +27,9 @@ static_assert(AudioEngine::kSlots <= LinkSync::kLanes, "every rack slot needs it
 
 AudioEngine::AudioEngine() {
     slotGain_.fill(1.0f);
+    mk3Bridge_ = std::make_unique<mk3::Mk3Bridge>(this);
+
+    mk3Bridge_->start();
     for (int i = 0; i < kSlots; ++i) {
         hosts_[static_cast<size_t>(i)] = std::make_unique<FirmwareHost>(&slots_[static_cast<size_t>(i)]);
         lanes_[static_cast<size_t>(i)] = LinkLane{&link_, i};
@@ -41,7 +46,11 @@ void AudioEngine::setFocus(int i) {
     focus_.store(i, std::memory_order_release);
 }
 
+
+
+
 AudioEngine::~AudioEngine() {
+    if (mk3Bridge_) mk3Bridge_->stop();
     stop();
 }
 
@@ -58,7 +67,8 @@ bool AudioEngine::start(int sampleRate, int bufferSize) {
     oboe::AudioStreamBuilder builder;
     builder.setDirection(oboe::Direction::Output);
     builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
-    builder.setSharingMode(oboe::SharingMode::Exclusive);
+    builder.setSharingMode(oboe::SharingMode::Shared);
+    builder.setAudioApi(oboe::AudioApi::OpenSLES);
     builder.setFormat(oboe::AudioFormat::Float);
     builder.setChannelCount(oboe::ChannelCount::Stereo);
     builder.setSampleRate(targetSampleRate_);
@@ -70,7 +80,13 @@ bool AudioEngine::start(int sampleRate, int bufferSize) {
 
     oboe::Result result = builder.openStream(stream_);
     if (result != oboe::Result::OK) {
-        LOGW("Failed to open exclusive stream (%s), trying shared mode...", oboe::convertToText(result));
+        LOGW("Failed to open OpenSLES shared stream (%s), trying AAudio...", oboe::convertToText(result));
+        builder.setAudioApi(oboe::AudioApi::AAudio);
+        result = builder.openStream(stream_);
+    }
+    if (result != oboe::Result::OK) {
+        LOGW("Failed to open AAudio stream (%s), trying Unspecified API...", oboe::convertToText(result));
+        builder.setAudioApi(oboe::AudioApi::Unspecified);
         builder.setSharingMode(oboe::SharingMode::Shared);
         result = builder.openStream(stream_);
     }
@@ -141,7 +157,15 @@ bool AudioEngine::reopenIfNeeded() {
     }
     LOGI("Reopening audio stream after error...");
     stop();
-    return start(targetSampleRate_, targetBufferSize_);
+    for (int retry = 0; retry < 5; ++retry) {
+        if (start(targetSampleRate_, targetBufferSize_)) {
+            LOGI("Audio stream successfully reopened on attempt %d", retry + 1);
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+    LOGE("Failed to reopen audio stream after retries");
+    return false;
 }
 
 void AudioEngine::updateOutputLatency() {
@@ -281,6 +305,10 @@ oboe::DataCallbackResult AudioEngine::onAudioReady(oboe::AudioStream* stream, vo
 void AudioEngine::onErrorAfterClose(oboe::AudioStream* /*stream*/, oboe::Result error) {
     LOGW("Oboe stream error after close: %s", oboe::convertToText(error));
     reopenNeeded_.store(true, std::memory_order_release);
+    std::thread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        reopenIfNeeded();
+    }).detach();
 }
 #endif
 

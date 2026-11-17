@@ -17,3 +17,95 @@
 	path = upstream/hortator
 	url = https://github.com/DeadActive/hortator.git
 	shallow = true
+[submodule "upstream/aisling"]
+	path = upstream/aisling
+	url = https://github.com/stephencummins/fm1-aisling.git
+	shallow = true
+[submodule "upstream/amb"]
+	path = upstream/amb
+	url = https://github.com/charlesvestal/fm1-amb.git
+	shallow = true
+[submodule "upstream/arctic"]
+	path = upstream/arctic
+	url = https://github.com/PolarPatch/Arctic-scream-FM-1.git
+	shallow = true
+[submodule "upstream/atek303"]
+	path = upstream/atek303
+	url = https://github.com/animatek/FM1-Animatek.git
+	shallow = true
+[submodule "upstream/blop"]
+	path = upstream/blop
+	url = https://github.com/OSR-Experiment/OSR-1.git
+	shallow = true
+[submodule "upstream/choppah"]
+	path = upstream/choppah
+	url = https://github.com/profikid/fm1-break-choppah.git
+	shallow = true
+[submodule "upstream/clipper"]
+	path = upstream/clipper
+	url = https://github.com/isod89/clipper-fm1.git
+	shallow = true
+[submodule "upstream/coralflower"]
+	path = upstream/coralflower
+	url = https://github.com/FicusFicusov/CoralFlower.git
+	shallow = true
+[submodule "upstream/demake"]
+	path = upstream/demake
+	url = https://github.com/InigoHernandez/demake-synth.git
+	shallow = true
+[submodule "upstream/echofield"]
+	path = upstream/echofield
+	url = https://github.com/Philip-Bos/echofield-fm1.git
+	shallow = true
+[submodule "upstream/fimba"]
+	path = upstream/fimba
+	url = https://github.com/jadamsowers/fm1-fimba.git
+	shallow = true
+[submodule "upstream/fmini"]
+	path = upstream/fmini
+	url = https://github.com/ruppert/fmini-1.git
+	shallow = true
+[submodule "upstream/frasil"]
+	path = upstream/frasil
+	url = https://github.com/styvesgoupil/frasil.git
+	shallow = true
+[submodule "upstream/guru600"]
+	path = upstream/guru600
+	url = https://github.com/MarcGoudy/guru-600.git
+	shallow = true
+[submodule "upstream/jamtrack"]
+	path = upstream/jamtrack
+	url = https://github.com/Philip-Bos/jamtrack-fm1.git
+	shallow = true
+[submodule "upstream/kwasub"]
+	path = upstream/kwasub
+	url = https://github.com/Guizmoh/K-WASUB_Firmware_for_FM1.git
+	shallow = true
+[submodule "upstream/loafbreaker"]
+	path = upstream/loafbreaker
+	url = https://github.com/FLEXOR-R/loaf-breaker.git
+	shallow = true
+[submodule "upstream/loom"]
+	path = upstream/loom
+	url = https://github.com/charlesvestal/fm1-loom.git
+	shallow = true
+[submodule "upstream/mutable"]
+	path = upstream/mutable
+	url = https://github.com/kidbee85-beep/mutable-dreams.git
+	shallow = true
+[submodule "upstream/obervave"]
+	path = upstream/obervave
+	url = https://github.com/zvenson/obervave.git
+	shallow = true
+[submodule "upstream/ravel"]
+	path = upstream/ravel
+	url = https://github.com/De-Pattern/Ravel_FM1.git
+	shallow = true
+[submodule "upstream/s1vave"]
+	path = upstream/s1vave
+	url = https://github.com/AndrewGG88/S1Vave.git
+	shallow = true
+[submodule "upstream/shineon"]
+	path = upstream/shineon
+	url = https://github.com/zvenson/shineon.git
+	shallow = true

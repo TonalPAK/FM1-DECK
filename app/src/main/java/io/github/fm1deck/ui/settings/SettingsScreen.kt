@@ -5,11 +5,15 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,14 +26,19 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.fm1deck.APP_EDIT_REVISION
 import io.github.fm1deck.engine.MasterPreset
 import io.github.fm1deck.engine.NativeBridge
+import io.github.fm1deck.fw.FirmwareCatalog
+import io.github.fm1deck.fw.FirmwareEntry
+import io.github.fm1deck.fw.rememberFirmwareThumb
 import io.github.fm1deck.settings.AppSettings
 import io.github.fm1deck.settings.Session
 import io.github.fm1deck.ui.panel.skin.KeyLight
@@ -64,9 +73,10 @@ fun SettingsScreen(
     onSaveSession: (String) -> Unit = {},
     onLoadSession: (Session) -> Unit = {},
     onDeleteSession: (Session) -> Unit = {},
+    initialTab: SettingsTab = SettingsTab.SESSION,
     onClose: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(SettingsTab.SESSION) }
+    var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     val context = LocalContext.current
 
     val openDocumentLauncher = rememberLauncherForActivityResult(
@@ -564,56 +574,282 @@ private fun FirmwareSettingsTab(
     settings: AppSettings,
     onSettingsChanged: (AppSettings) -> Unit
 ) {
-    val firmwares = listOf(
-        Triple("jiant", "JIANT FM", "Synthesis, sequencing, mutation, performance — by juanjiant-bit (fork of Felucca)"),
-        Triple("felucca", "Felucca", "The original alternative firmware — by Leo Kuroshita / Hügelton Instruments"),
-        Triple("sloop", "SLOOP", "A live groovebox for any style — by isod89 (based on Felucca)"),
-        Triple("hortator", "Hortator", "Eight-track drum machine: steps, Grids, ACID bass, PERFORM — by DEADACTIVE (based on Felucca)")
-    )
+    val compact = LocalSettingsCompact.current
+    val perRow = if (compact) 2 else 4
+    var targetSlot by remember { mutableIntStateOf(settings.rackFocus) }
+    LaunchedEffect(settings.rackFocus) {
+        if (settings.rack.getOrNull(targetSlot)?.isNotEmpty() == true) {
+            targetSlot = settings.rackFocus
+        }
+    }
+    val rows = remember(perRow) { FirmwareCatalog.builtins.chunked(perRow) }
+    val filledCount = settings.rack.count { it.isNotEmpty() }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Text("FIRMWARE IN SLOT ${settings.rackFocus + 1}", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            "The rack plays up to ${AppSettings.RACK_SLOTS} firmwares at once; the tab at the panel's top right switches between them.",
-            color = Color(0xFF666666), fontSize = 11.sp
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        firmwares.forEach { (id, name, desc) ->
-            val isSelected = id == settings.activeFwId
-            val otherSlot = settings.rack.indexOf(id).takeIf { it >= 0 && it != settings.rackFocus }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (isSelected) Color(0xFF243342) else Color(0xFF1E1E1E))
-                    .border(
-                        width = if (isSelected) 1.5.dp else 1.dp,
-                        color = if (isSelected) Color(0xFF6FA8DC) else Color(0xFF2C2C2C),
-                        shape = RoundedCornerShape(8.dp)
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 4-slot rack switcher bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (slot in 0 until AppSettings.RACK_SLOTS) {
+                val fwId = settings.rack.getOrElse(slot) { "" }
+                val entry = FirmwareCatalog.findById(fwId)
+                val isFocused = slot == settings.rackFocus
+                val isTarget = slot == targetSlot
+                val canClear = entry != null && filledCount > 1
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            when {
+                                isFocused -> Color(0xFF243342)
+                                isTarget -> Color(0xFF28282C)
+                                else -> Color(0xFF1E1E1E)
+                            }
+                        )
+                        .border(
+                            width = if (isTarget) 1.5.dp else 1.dp,
+                            color = when {
+                                isTarget -> Color(0xFF6FA8DC)
+                                isFocused -> Color(0xFF476A8E)
+                                else -> Color(0xFF2E2E2E)
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            targetSlot = slot
+                            if (entry != null && !isFocused) {
+                                onSettingsChanged(settings.withFocus(slot))
+                            }
+                        }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${slot + 1}",
+                        color = if (isFocused) Color(0xFF6FA8DC) else Color(0xFF888888),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    // In another slot already: go there; else it takes the focused slot's place
-                    .clickable { onSettingsChanged(if (otherSlot != null) settings.withFocus(otherSlot) else settings.withSlot(settings.rackFocus, id)) }
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(name, color = if (isSelected) Color(0xFF6FA8DC) else Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(desc, color = Color(0xFFAAAAAA), fontSize = 11.sp)
-                }
-                if (isSelected) {
-                    Text("ACTIVE", color = Color(0xFF6FA8DC), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                } else if (otherSlot != null) {
-                    Text("SLOT ${otherSlot + 1}", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = entry?.displayName ?: "Empty",
+                        color = if (entry != null) Color.White else Color(0xFF666666),
+                        fontSize = 11.sp,
+                        fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (canClear) {
+                        Text(
+                            text = "×",
+                            color = Color(0xFF888888),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable {
+                                    onSettingsChanged(settings.withSlot(slot, ""))
+                                }
+                                .padding(horizontal = 4.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Full package manager, OTA updates and NOR backup coming in P3.", color = Color(0xFF666666), fontSize = 11.sp)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "FIRMWARES (${FirmwareCatalog.builtins.size}) · TAP CARD TO LOAD INTO SLOT ${targetSlot + 1} · RACK PLAYS ${AppSettings.RACK_SLOTS} AT ONCE",
+            color = Color(0xFF777777),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(bottom = 12.dp)
+        ) {
+            itemsIndexed(rows) { _, rowFirmwares ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    rowFirmwares.forEach { fw ->
+                        FirmwareCard(
+                            fw = fw,
+                            isFocused = fw.id == settings.activeFwId,
+                            slotIndex = settings.rack.indexOf(fw.id).takeIf { it >= 0 },
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                val existingSlot = settings.rack.indexOf(fw.id).takeIf { it >= 0 }
+                                val next = if (existingSlot != null && existingSlot != targetSlot) {
+                                    settings.withFocus(existingSlot)
+                                } else {
+                                    settings.withSlot(targetSlot, fw.id).withFocus(targetSlot)
+                                }
+                                targetSlot = next.rackFocus
+                                onSettingsChanged(next)
+                            }
+                        )
+                    }
+                    repeat(perRow - rowFirmwares.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FirmwareCard(
+    fw: FirmwareEntry,
+    isFocused: Boolean,
+    slotIndex: Int?,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val thumb = rememberFirmwareThumb(fw.thumbAsset)
+    val accent = Color(fw.accentColorHex)
+    val borderColor = when {
+        isFocused -> Color(0xFF6FA8DC)
+        slotIndex != null -> accent.copy(alpha = 0.7f)
+        else -> Color(0xFF2B2B30)
+    }
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (isFocused) Color(0xFF1E2936) else Color(0xFF1A1A1E))
+            .border(if (isFocused) 1.5.dp else 1.dp, borderColor, RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.22f)
+                .background(Color(0xFF0E0E11)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (thumb != null) {
+                Image(
+                    bitmap = thumb,
+                    contentDescription = fw.displayName,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(4.dp)
+                )
+            } else {
+                Text(
+                    text = fw.shortName,
+                    color = accent.copy(alpha = 0.6f),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (isFocused || slotIndex != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(5.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isFocused) Color(0xFF6FA8DC) else Color(0xCC222228))
+                        .border(1.dp, if (isFocused) Color(0xFF6FA8DC) else accent.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = if (isFocused) "SLOT ${ (slotIndex ?: 0) + 1 } · ON" else "SLOT ${slotIndex!! + 1}",
+                        color = if (isFocused) Color(0xFF0E141B) else Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Accent bar matching The Firmware Hub cards
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.5.dp)
+                .background(accent)
+        )
+
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = fw.displayName,
+                    color = accent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (fw.version.isNotEmpty()) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = fw.version,
+                        color = Color(0xFF88888E),
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                }
+            }
+            if (fw.author.isNotEmpty()) {
+                Text(
+                    text = "by ${fw.author}",
+                    color = Color(0xFF9A9AA2),
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (fw.tags.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    fw.tags.take(2).forEach { tag ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    when (tag) {
+                                        "BETA" -> Color(0xFF3E3018)
+                                        else -> Color(0xFF25252B)
+                                    }
+                                )
+                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = tag,
+                                color = if (tag == "BETA") Color(0xFFF2B66D) else Color(0xFFB4B4BC),
+                                fontSize = 7.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = fw.description,
+                color = Color(0xFFC2C2C8),
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -633,7 +869,7 @@ private fun AboutTab() {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Text("FM1 DECK", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
-        Text("Alternative firmware groovebox for Android", color = Color(0xFF888888), fontSize = 12.sp)
+        Text("Alternative firmware groovebox for Android (${FirmwareCatalog.builtins.size} firmwares, ${AppSettings.RACK_SLOTS} rack slots)", color = Color(0xFF888888), fontSize = 12.sp)
 
         Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider(color = Color(0xFF282828))
@@ -645,11 +881,11 @@ private fun AboutTab() {
         Text("Firmware ABI: 1", color = Color.White, fontSize = 12.sp)
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text("CREDITS & PORTS", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("CREDITS & PORTS (${FirmwareCatalog.builtins.size} FIRMWARES)", color = Color(0xFF888888), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("• Felucca — Leo Kuroshita / Hügelton Instruments (github.com/hugelton/Felucca)", color = Color.White, fontSize = 12.sp)
-        Text("• JIANT FM — juanjiant-bit (github.com/juanjiant-bit/JIANT)", color = Color.White, fontSize = 12.sp)
-        Text("• SLOOP — isod89 (github.com/isod89/sloop-fm1)", color = Color.White, fontSize = 12.sp)
-        Text("• Hortator — DEADACTIVE (github.com/DeadActive/hortator)", color = Color.White, fontSize = 12.sp)
+        FirmwareCatalog.builtins.forEach { fw ->
+            val repo = fw.repoUrl.removePrefix("https://")
+            Text("• ${fw.displayName} ${fw.version} — ${fw.author} ($repo)", color = Color.White, fontSize = 11.sp)
+        }
     }
 }

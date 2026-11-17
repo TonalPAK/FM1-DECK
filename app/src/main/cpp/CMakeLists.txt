@@ -17,7 +17,8 @@ file(GLOB_RECURSE FM1DECK_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/jni/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/fw/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/dsp/*.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/dsp/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/mk3/*.cpp)
 
 add_library(fm1deck SHARED ${FM1DECK_SOURCES})
 target_include_directories(fm1deck PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
