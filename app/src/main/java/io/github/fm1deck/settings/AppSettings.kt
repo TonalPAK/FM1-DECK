@@ -1,5 +1,7 @@
 package io.github.fm1deck.settings
 
+enum class RackGate { MUTE, SOLO }
+
 /**
  * Application settings data model (schema 1).
  * Defaults in one place per docs/SETTINGS.md.
@@ -84,6 +86,16 @@ data class AppSettings(
     fun withFocusMaster(adc: Int): AppSettings =
         copy(rackMasters = rackMasters.toMutableList().also { if (rackFocus in it.indices) it[rackFocus] = adc })
             .normalized()
+
+    /** Toggle one gate on an occupied slot, preserving both masks' other bits. */
+    fun withRackGateToggled(slot: Int, gate: RackGate): AppSettings {
+        if (slot !in 0 until RACK_SLOTS || rack.getOrNull(slot).isNullOrEmpty()) return this
+        val bit = 1 shl slot
+        return when (gate) {
+            RackGate.MUTE -> copy(rackMute = rackMute xor bit)
+            RackGate.SOLO -> copy(rackSolo = rackSolo xor bit)
+        }
+    }
 
     companion object {
         /** Slots the rack offers (the native engine has room for AudioEngine::kSlots). */

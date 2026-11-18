@@ -6,8 +6,7 @@ Play a wavetable synth, a drum machine, an acid bassline or a granular sampler o
 four different instruments from the library, play them together and save the setup as a session. The app runs
 standalone on the phone and can share its tempo and beat with **Ableton Live** over Wi-Fi.
 
-[Download a release for your phone](https://github.com/TonalPAK/FM1-DECK/releases) ·
-[Get the 28-firmware preview APK](https://github.com/TonalPAK/FM1-DECK/actions/runs/44187753550/artifacts/14375528177) ·
+[Download the latest signed APK](https://github.com/TonalPAK/FM1-DECK/releases/latest) ·
 [Preview builds from main](https://github.com/TonalPAK/FM1-DECK/actions/workflows/android.yml?query=branch%3Amain) ·
 [Changelog](CHANGELOG.md)
 
@@ -42,8 +41,8 @@ mute and solo, tempo and each loaded instrument's saved state.
 
 ## Start playing
 
-1. Install the APK on an Android 10+ phone with a 64-bit ARM processor. **Releases** has signed builds. For the
-   28-firmware preview, sign in to GitHub, download the Actions artifact and unzip it to get `app-debug.apk`.
+1. Install the signed APK from **Releases** on an Android 10+ phone with a 64-bit ARM processor. For a preview build,
+   sign in to GitHub, download the `app-debug` Actions artifact and unzip it to get `app-debug.apk`.
 2. Open the app and play the keys. **PRESETS** changes the sound, **OCT− / OCT+** moves the keyboard, and
    **KNOB 1–4** edits the current page. The screen comes from the selected instrument. Knob captions follow the
    current page on ports that provide parameter data.
@@ -51,7 +50,7 @@ mute and solo, tempo and each loaded instrument's saved state.
    slot to put it on the panel. **M** mutes and **S** solos.
 4. With two or more slots, drag the rack's **BPM** to set the tempo and tap its transport to start or stop the
    instruments that follow it. Load or record a pattern in an instrument if its sequencer has nothing to play.
-5. Tap the **dot at the top left** for Settings. Try a **Skin**, adjust the **Master** chain or save your setup
+5. Tap the **white ring at the top left** for Settings. Try a **Skin**, adjust the **Master** chain or save your setup
    under **Session**. Watch the DSP meter if several instruments cause crackles.
 
 [Watch a JIANT FM jam on the phone](https://youtu.be/nUwRVQZXRtA) ·

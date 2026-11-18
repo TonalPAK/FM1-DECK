@@ -321,6 +321,22 @@ class SkinLayoutTest {
     }
 
     @Test
+    fun settingsRingGrowsAndStaysInsideItsTouchTargetInEverySkin() {
+        for (skin in SkinRepository.loadFromDirectory(findSkinsDir())) {
+            val portrait = skin.isPortrait
+            val width = if (portrait) 720f else 1640f
+            val height = if (portrait) 1640f else 720f
+            val insets = Insets(top = if (portrait) 60f else 0f, cornerRadius = 64f)
+            val g = SkinLayout.calculate(skin, width, height, 2f, insets)
+            val gear = g.gear
+            assertEquals("Outer radius relative to the old dot in ${skin.id}", 1.69f, gear.radius / (2.6f * g.u), 0.001f)
+            assertTrue("Top-left ring bounds in ${skin.id}", gear.hitRect.contains(gear.center.x - gear.radius, gear.center.y - gear.radius))
+            assertTrue("Bottom-right ring bounds in ${skin.id}", gear.hitRect.contains(gear.center.x + gear.radius, gear.center.y + gear.radius))
+            assertEquals("Ring center opens Settings in ${skin.id}", PanelTarget.Gear, g.hitTest(gear.center.x, gear.center.y))
+        }
+    }
+
+    @Test
     fun testSettingsDotInsideRoundedCorner() {
         val skins = SkinRepository.loadFromDirectory(findSkinsDir()).filter { !it.isPortrait }
         // Measured corner radii: Samsung M52 84 px, POCO C75 64 px

@@ -1,7 +1,7 @@
 # The settings menu
 
-Settings open from a small dot in a free corner of the panel (above the screen block, outside the touch zones; the
-position comes from the skin: `"gear": "top-right"`). It is a full-screen menu (Compose Material3, dark) with tabs on
+Tap the white ring in the panel's top-left corner to open Settings.
+It is a full-screen menu (Compose Material3, dark) with tabs on
 the left. Changes apply at once; sound is not interrupted, except when the stream rate/mode changes (a short fade and
 a reopen).
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -73,6 +74,8 @@ fun PanelSurface(
     val density = LocalDensity.current.density
     val textMeasurer = rememberTextMeasurer()
     val screenImageBitmap = remember(panelState.screenFrameCount) { panelState.screenBitmap.asImageBitmap() }
+    val gear = geometry.gear
+    val settingsRingStroke = remember(gear.radius) { Stroke(width = gear.radius * 0.36f) }
 
     // Multi-touch held masks
     var heldButtonsMask by remember { mutableIntStateOf(0) }
@@ -383,12 +386,17 @@ fun PanelSurface(
             beatMarks = settings.keyBeatMarks
         )
 
-        // 5. Settings: a small dot in the top-left corner; green while Ableton Link is on. Under it the DSP meter.
+        // 5. Settings ring and its Link indicator, above the DSP meter.
+        val settingsCenter = gear.center.toOffset()
         drawCircle(
-            color = if (LinkController.enabled) Color(0xFF5FE08A) else palette.buttonLabel.copy(alpha = 0.85f),
-            radius = geometry.gear.radius,
-            center = geometry.gear.center.toOffset()
+            color = Color.White,
+            radius = gear.radius - settingsRingStroke.width / 2f,
+            center = settingsCenter,
+            style = settingsRingStroke
         )
+        if (LinkController.enabled) {
+            drawCircle(color = Color(0xFF5FE08A), radius = gear.radius * 0.28f, center = settingsCenter)
+        }
         RackChrome.drawDspMeter(this, geometry, palette, panelState.dspLoad, panelState.dspPeak)
         RackChrome.drawTab(this, geometry, palette, settings.rack, settings.rackFocus, rackOpen)
 

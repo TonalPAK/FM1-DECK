@@ -269,7 +269,9 @@ class MainActivity : ComponentActivity() {
                             val next = settingsState.value.withSlot(slot, id)
                             updateSettings(if (id.isNotEmpty()) next.withFocus(next.rack.indexOf(id)) else next)
                         },
-                        onGate = { mute, solo -> updateSettings(settingsState.value.copy(rackMute = mute, rackSolo = solo)) },
+                        onToggleGate = { slot, gate ->
+                            updateSettings(settingsState.value.withRackGateToggled(slot, gate))
+                        },
                         onTempo = { bpm -> updateSettings(settingsState.value.copy(rackTempo = bpm)) }
                     )
                 }

@@ -68,6 +68,7 @@ import io.github.fm1deck.engine.LinkStatus
 import io.github.fm1deck.fw.FirmwareCatalog
 import io.github.fm1deck.fw.rememberFirmwareThumb
 import io.github.fm1deck.settings.AppSettings
+import io.github.fm1deck.settings.RackGate
 import io.github.fm1deck.ui.panel.render.PanelStyle
 import io.github.fm1deck.ui.panel.skin.Palette
 import kotlinx.coroutines.delay
@@ -196,7 +197,7 @@ fun RackDrawer(
     topPx: Float,
     onFocus: (Int) -> Unit,
     onAssign: (slot: Int, fwId: String) -> Unit,
-    onGate: (mute: Int, solo: Int) -> Unit,
+    onToggleGate: (slot: Int, gate: RackGate) -> Unit,
     onTempo: (Double) -> Unit
 ) {
     val view = LocalView.current
@@ -274,8 +275,8 @@ fun RackDrawer(
                                 },
                                 onPick = { haptic(); page = RackPage.Pick(i) },
                                 onClear = { haptic(); onAssign(i, "") },
-                                onMute = { haptic(); onGate(settings.rackMute xor bit, settings.rackSolo) },
-                                onSolo = { haptic(); onGate(settings.rackMute, settings.rackSolo xor bit) }
+                                onMute = { haptic(); onToggleGate(i, RackGate.MUTE) },
+                                onSolo = { haptic(); onToggleGate(i, RackGate.SOLO) }
                             )
                         }
                     }
@@ -538,13 +539,14 @@ private fun DropArrow(palette: Palette, onClick: () -> Unit) {
 /** MUTE / SOLO: a small key, lit in its colour while on. */
 @Composable
 private fun GateButton(label: String, on: Boolean, lit: Color, palette: Palette, onClick: () -> Unit) {
+    val clickNow by rememberUpdatedState(onClick)
     Box(
         Modifier
             .width(28.dp)
             .height(22.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(if (on) lit else palette.background)
-            .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) },
+            .pointerInput(Unit) { detectTapGestures(onTap = { clickNow() }) },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = if (on) palette.background else palette.buttonLabelDim, fontSize = 12.sp, fontFamily = PanelStyle.dotFont)

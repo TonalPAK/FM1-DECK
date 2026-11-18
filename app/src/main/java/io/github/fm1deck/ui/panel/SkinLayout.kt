@@ -7,6 +7,7 @@ import io.github.fm1deck.ui.panel.skin.LayoutNode
 import io.github.fm1deck.ui.panel.skin.RowNode
 import io.github.fm1deck.ui.panel.skin.Skin
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 /**
  * Pure Kotlin 2D geometry primitives.
@@ -282,15 +283,24 @@ object SkinLayout {
         val blockBoundsMap = mutableMapOf<BlockId, Rect>()
         layoutNode(skin.panel.top, topAreaRect, u, blockBoundsMap)
 
-        // Settings: a small dot in the top-left corner margin. It takes no space from any block.
+        // Settings: a small ring in the top-left corner margin. It takes no space from any block.
         // Its touch target is a square in the screen's own corner (in landscape the cutout sits mid-height of a short
         // edge, so the corner is free), sized at the end (fitGearTarget) to stay clear of every control.
-        // On a rounded display the dot moves along the diagonal until it sits wholly inside the visible arc, with a
-        // small rim, so it never hides under the corner.
+        // Keep the ring inside the corner arc and the panel margin. If it needs to move left of the diagonal to
+        // clear the blocks, move it down along the arc to keep the same clearance from the display edge.
         val gearRadius = GEAR_DOT_U * u
         val cornerR = safeInsets.cornerRadius
-        val inCorner = if (cornerR > 0f) cornerR - (cornerR - gearRadius - GEAR_RIM_U * u) / SQRT2 else 0f
-        val gearCenter = Point(maxOf(padH * 0.5f, inCorner), maxOf(safeTop + padTop * 0.5f, inCorner))
+        val edgeClearance = gearRadius + GEAR_RIM_U * u
+        val usableCornerRadius = cornerR - edgeClearance
+        val inCorner = if (cornerR > 0f) cornerR - usableCornerRadius / SQRT2 else 0f
+        val preferredX = maxOf(padH * 0.5f, inCorner)
+        val maxMarginX = topAreaRect.left - gearRadius - 0.5f * u
+        val gearX = if (maxMarginX >= edgeClearance) minOf(preferredX, maxMarginX) else preferredX
+        val cornerY = if (gearX < inCorner) {
+            val dx = cornerR - gearX
+            cornerR - sqrt((usableCornerRadius * usableCornerRadius - dx * dx).coerceAtLeast(0f))
+        } else inCorner
+        val gearCenter = Point(gearX, maxOf(safeTop + padTop * 0.5f, cornerY))
 
         val blocks = BlockId.entries.associateWith { id ->
             val rect = blockBoundsMap[id] ?: Rect(0f, 0f, 0f, 0f)
@@ -804,8 +814,8 @@ object SkinLayout {
         return keysList
     }
 
-    /** The settings dot's radius and its clearance from the rounded screen edge, u. */
-    const val GEAR_DOT_U = 2.6f
+    /** The settings ring's outer radius and its clearance from the rounded screen edge, u. */
+    const val GEAR_DOT_U = 4.394f
     const val GEAR_RIM_U = 2f
     private const val SQRT2 = 1.4142135f
 

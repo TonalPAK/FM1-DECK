@@ -24,7 +24,7 @@ Everything those manuals say about the hardware's panel applies here: the app's 
 | **27 keys** (F3–G5) | Bottom row: naturals; top row: sharps. Multitouch: play chords, hold a layer button with one finger and press keys with others. |
 | **F (latch)** | The mini button in the margin beside the MASTER / PRESETS knobs. Tap F (it lights), then tap buttons: each stays held until you tap it again or tap F to release everything. Handy with the phone in both hands: latch GLO, FX or EDIT and turn an encoder with the same thumb. Without F everything works as usual. |
 | **Note names** | Each key shows its note. When the firmware offers keys as functions (a layer is held, the screen says "F SOLO", "C ALL"), those letters light up brightly; while you play they glow with the key's LED. |
-| **Settings dot** | The small dot in the top-left corner opens Settings. It is green while Ableton Link is on. |
+| **Settings ring** | The white ring in the top-left corner opens Settings. A green mark appears inside it while Ableton Link is on. |
 
 ## 2. Settings → Skin
 

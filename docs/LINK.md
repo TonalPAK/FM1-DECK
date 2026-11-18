@@ -7,8 +7,8 @@ apps sync with it too.
 ## How to use it
 
 1. Both phones on the same Wi-Fi network.
-2. Settings → MIDI → **LINK ON** on each. "Linked with N devices" means the session is up; the settings dot in the
-   panel's corner is green while Link is on.
+2. Settings → MIDI → **LINK ON** on each. "Linked with N devices" means the session is up. A green mark appears
+   inside the white Settings ring while Link is on.
 3. **PLAY** on either phone's panel starts all of them; the start lands on the nearest "Start on" boundary (beat /
    2 beats / bar / 2 bars, bar by default). PLAY again stops all of them. GLO+PLAY, REC+PLAY and other combos work as
    on the device (they are not the shared transport).

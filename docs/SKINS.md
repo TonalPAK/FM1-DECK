@@ -46,10 +46,10 @@ A new skin = a new JSON (a user skin can be imported too: Settings → Skin → 
 4. The top zone is laid out by a `row/column` tree by weights (`weight`) with gaps (`gap`). The skins' weights are
    tuned so the screen gets the largest square available (weight 0.31).
 5. The LCD takes the largest square that fits in its block; the bezel is `max(3 * u, side / 48)`.
-6. Settings is a **small dot in the top-left corner**. It sits in the panel's margin and takes no space from any
+6. Settings opens from the **white ring in the top-left corner**. It sits in the panel's margin and takes no space from any
    block. Its touch target is a square in the screen corner (in landscape the cutout is in the middle of the short
    side, so the corner is free): the largest from 40 down to 28 dp that touches no knob, button, LCD or keyboard
-   (`SkinLayout.fitGearTarget`; host test). On screens with rounded corners the dot moves diagonally inside the
+   (`SkinLayout.fitGearTarget`; host test). On screens with rounded corners the ring moves inside the
    visible arc (the corner radius comes from `Display.getRoundedCorner`, Android 12+; Samsung M52 — 84 px, POCO C75 —
    64 px), otherwise the glass would cut it off.
 7. The result is a list of rectangles/circles with roles (`Button(FX)`, `Knob(K2)`, `Key(14)`, `Screen`, `Gear`) —
@@ -67,7 +67,7 @@ Approximate sizes:
 | screen (LCD square) | 602 px (229 dp, 2.5× of 240) | 402 px (201 dp, 1.7× of 240) |
 
 The minimum touch target is 40 dp (on the C75 with 360 dp of height this holds for every element except OCT± — their
-strip stretches over the block's full width — and the settings dot: a corner target ≥ 28 dp).
+strip stretches over the block's full width — and the white settings ring: a corner target ≥ 28 dp).
 
 ## 3. Blocks
 
@@ -143,7 +143,7 @@ Block frames are off by default in every skin; the "Block frames" setting draws 
 ## 7. Tests
 
 - Host: the layout of every skin at 914×411 and 820×360 dp — symmetric margins (left == right ±1 px) with the cutout
-  on the left and on the right, no overlapping controls, the settings dot outside every block and its target touching
+  on the left and on the right, no overlapping controls, the settings ring outside every block and its target touching
   no knob/button/LCD/key, the system block not shortened (top = top of the area), OCT inside its island, buttons
   inside the tray, a square screen with the LCD no smaller than 602 px on the Samsung and 402 px on the POCO, every
   target ≥ 40 dp (except the noted OCT±), the keyboard = 27 keys across the full width with a `2 * u` margin.

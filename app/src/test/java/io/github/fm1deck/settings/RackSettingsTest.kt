@@ -52,6 +52,30 @@ class RackSettingsTest {
     }
 
     @Test
+    fun successiveGateTogglesPreserveTheOtherGateAndSlots() {
+        val first = AppSettings(rack = listOf("jiant", "felucca", "", ""))
+            .withRackGateToggled(0, RackGate.MUTE)
+            .withRackGateToggled(1, RackGate.SOLO)
+            .withRackGateToggled(0, RackGate.SOLO)
+        assertEquals(0b01, first.rackMute)
+        assertEquals(0b11, first.rackSolo)
+
+        val second = first.withRackGateToggled(0, RackGate.MUTE)
+            .withRackGateToggled(1, RackGate.SOLO)
+        assertEquals(0, second.rackMute)
+        assertEquals(0b01, second.rackSolo)
+        assertEquals(0, second.withRackGateToggled(0, RackGate.SOLO).rackSolo)
+    }
+
+    @Test
+    fun gateToggleIgnoresEmptyAndInvalidSlots() {
+        val s = AppSettings(rack = listOf("jiant", "", "", ""), rackSolo = 0b01)
+        assertEquals(s, s.withRackGateToggled(1, RackGate.SOLO))
+        assertEquals(s, s.withRackGateToggled(-1, RackGate.MUTE))
+        assertEquals(s, s.withRackGateToggled(32, RackGate.MUTE))
+    }
+
+    @Test
     fun rackRoundTripsWithFourSlots() {
         val file = File(tempFolder.root, "settings.json")
         val original = AppSettings(

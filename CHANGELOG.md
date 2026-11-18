@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1 — four-slot rack and 28 built-in instruments (2026-11-18)
+
+- **Instrument library:** 28 built-in instruments, including SHRUB 1.05. Updated Felucca to 1.8.0,
+  JIANT FM to V10.9 and Hortator to 0.26.0.
+- **Four-slot rack:** play up to four instruments together and choose them from a picker with thumbnails and
+  firmware versions.
+- **Rack clock and Ableton Link:** improved shared start and stop timing, including quick restarts. SHRUB follows
+  the shared tempo and transport and restores its preset tempo when shared control ends.
+- **Live controls:** updated encoder labels and values on supported instruments. The Maschine MK3 bridge shows the
+  focused instrument and its live parameter values where available.
+- **Mute and Solo:** repeated presses switch each control independently while the rack drawer stays open.
+- **Settings:** a larger white ring makes the entry visible at the rounded corner of the screen. The green mark
+  inside shows when Ableton Link is on.
+
 ## 0.2.0 — three grooveboxes in one (2026-10-13)
 
 - **The rack:** up to three firmwares play at once into the one master bus. A drawer from the triangle in the
