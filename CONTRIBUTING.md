@@ -67,5 +67,9 @@ disabled on purpose. Native tests: [`native-tests/`](native-tests) (CMake).
 
 ## Pull requests
 
+Fetch `origin` and start each new branch from `origin/main` so it includes the latest fixes. Pushes to work
+branches do not start Android CI. Open a pull request into `main` to run the build and tests. The debug APK is
+published by the workflow for `main` pushes. The signed release APK uses the separate version-tag workflow.
+
 Say what changed and why, the commands you ran and what you observed, what you checked on a device (which phone,
 which Android) and what you did not. Changes that touch the audio path should include callback timings or xrun counts.

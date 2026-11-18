@@ -8,7 +8,7 @@ standalone on the phone and can share its tempo and beat with **Ableton Live** o
 
 [Download a release for your phone](https://github.com/TonalPAK/FM1-DECK/releases) ·
 [Get the 28-firmware preview APK](https://github.com/TonalPAK/FM1-DECK/actions/runs/44187753550/artifacts/14375528177) ·
-[Preview builds on GitHub Actions](https://github.com/TonalPAK/FM1-DECK/actions/workflows/android.yml?query=branch%3Afeature%2Fupdate-firmwares) ·
+[Preview builds from main](https://github.com/TonalPAK/FM1-DECK/actions/workflows/android.yml?query=branch%3Amain) ·
 [Changelog](CHANGELOG.md)
 
 ![FM1 DECK touch panel on an Android phone](docs/images/hero.png)
@@ -107,7 +107,8 @@ python3 tools/fwgen/fwgen.py all
 Use JDK 21, Android SDK and NDK 28.2, CMake, Ninja and Python with Pillow (RAQM), NumPy and fontTools. On Windows,
 use WSL for firmware header generation and `gradlew.bat` for the Android build. The APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. Remove the ABI override to build ARM64 and x86_64. GitHub Actions runs
-`assembleDebug`, the host tests and the native suite, then publishes `app-debug`.
+`assembleDebug`, the host tests and the native suite on pushes to `main` and on pull requests into `main`.
+The `app-debug` artifact is published on pushes to `main`.
 
 The Android host uses the firmware's original sources where available, with adapters for the hardware interface.
 Each module has its own audio and persistent state. The phone loads the modules it needs, renders them into the
